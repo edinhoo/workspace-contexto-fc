@@ -9,7 +9,7 @@ O que foi feito:
 Impactos:
 - 
 
-Validacao:
+Validação:
 - [ ] build
 - [ ] lint
 - [ ] test

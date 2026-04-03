@@ -10,6 +10,7 @@
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
+    "scrape:sofascore": "pnpm --filter @services/sofascore exec tsc -p tsconfig.build.json > /dev/null 2>&1 && node services/sofascore/dist/index.js",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "format": "prettier --check .",
@@ -25,6 +26,7 @@
     "prettier": "^3.5.3",
     "turbo": "^2.5.0",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.29.1"
+    "typescript-eslint": "^8.29.1",
+    "ulid": "^2.4.0"
   }
 }

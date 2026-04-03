@@ -1,0 +1,16 @@
+{
+  "name": "@services/sofascore",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "scrape": "tsc -p tsconfig.build.json > /dev/null 2>&1 && node dist/index.js",
+    "lint": "eslint src --ext .ts",
+    "test": "node --test",
+    "typecheck": "tsc -p tsconfig.build.json --noEmit"
+  }
+}

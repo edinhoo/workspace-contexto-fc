@@ -44,6 +44,7 @@ pnpm install
 pnpm dev
 pnpm build
 pnpm lint
+pnpm scrape:sofascore
 pnpm test
 pnpm typecheck
 ```
@@ -110,6 +111,7 @@ import type { Identifier } from "@repo/types";
 
 ## Observacoes
 
-- Nenhum servico foi criado em `services/` ainda.
+- O primeiro servico manual foi criado em `services/sofascore`.
+- O comando `pnpm scrape:sofascore` executa a entrada inicial do scraper.
 - Os packages compartilhados ja possuem scripts padrao e build independente.
 - O `docker-compose.yml` esta pronto para receber futuros containers sem travar a base atual.

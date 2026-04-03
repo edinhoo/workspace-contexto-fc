@@ -32,12 +32,17 @@ importers:
       typescript-eslint:
         specifier: ^8.29.1
         version: 8.58.0(eslint@9.39.4)(typescript@5.9.3)
+      ulid:
+        specifier: ^2.4.0
+        version: 2.4.0
 
   packages/config: {}
 
   packages/logger: {}
 
   packages/types: {}
+
+  services/sofascore: {}
 
 packages:
 
@@ -521,6 +526,10 @@ packages:
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
+    hasBin: true
+
+  ulid@2.4.0:
+    resolution: {integrity: sha512-fIRiVTJNcSRmXKPZtGzFQv9WRrZ3M9eoptl/teFJvjOzmpU+/K/JH6HZ8deBfb5vMEpicJcLn7JmvdknlMq7Zg==}
     hasBin: true
 
   undici-types@6.21.0:
@@ -1022,6 +1031,8 @@ snapshots:
       - supports-color
 
   typescript@5.9.3: {}
+
+  ulid@2.4.0: {}
 
   undici-types@6.21.0: {}
 
