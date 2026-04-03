@@ -2,6 +2,7 @@ import type {
   CityRecord,
   CountryRecord,
   EventMetadata,
+  ManagerRecord,
   RefereeRecord,
   SeasonRecord,
   StadiumRecord,
@@ -25,6 +26,8 @@ export const fetchEventMetadataByEventId = async (
   const season = payload.event?.season;
   const venue = payload.event?.venue;
   const referee = payload.event?.referee;
+  const homeManager = payload.event?.homeTeam?.manager;
+  const awayManager = payload.event?.awayTeam?.manager;
   const country = tournament?.category?.country;
   const uniqueTournament = tournament?.uniqueTournament;
   const venueCountry = venue?.country;
@@ -32,8 +35,8 @@ export const fetchEventMetadataByEventId = async (
   const stadium = venue?.stadium;
   const venueCoordinates = venue?.venueCoordinates;
 
-  const countryRecord: CountryRecord | null = country
-    ? {
+  const countryRecord = country
+    ? ({
         id: "",
         slug: country.slug,
         name: country.name,
@@ -45,8 +48,27 @@ export const fetchEventMetadataByEventId = async (
         source_name: country.name,
         source: SOURCE,
         sourcetranslated: false
-      }
+      } satisfies CountryRecord)
     : null;
+
+  const managerCountryRecords = [homeManager?.country, awayManager?.country]
+    .filter((managerCountry): managerCountry is NonNullable<typeof managerCountry> => Boolean(managerCountry))
+    .map(
+      (managerCountry) =>
+        ({
+          id: "",
+          slug: managerCountry.slug,
+          name: managerCountry.name,
+          code2: managerCountry.alpha2 ?? "",
+          code3: managerCountry.alpha3 ?? "",
+          source_slug: managerCountry.slug,
+          source_code2: managerCountry.alpha2 ?? "",
+          source_code3: managerCountry.alpha3 ?? "",
+          source_name: managerCountry.name,
+          source: SOURCE,
+          sourcetranslated: false
+        }) satisfies CountryRecord
+    );
 
   const tournamentRecord: TournamentRecord | null =
     tournament && uniqueTournament && country
@@ -132,12 +154,52 @@ export const fetchEventMetadataByEventId = async (
         }
       : null;
 
+  const managers: ManagerRecord[] = [homeManager, awayManager]
+    .filter((manager): manager is NonNullable<typeof manager> => Boolean(manager?.country))
+    .map(
+      (manager) =>
+        ({
+          id: "",
+          slug: manager.slug,
+          name: manager.name,
+          short_name: manager.shortName ?? manager.name,
+          country: manager.country?.slug ?? "",
+          source_id: String(manager.id),
+          source: SOURCE,
+          edited: false
+        }) satisfies ManagerRecord
+    );
+
+  const allCountryRecords: CountryRecord[] = [];
+
+  if (countryRecord) {
+    allCountryRecords.push(countryRecord);
+  }
+
+  allCountryRecords.push(...managerCountryRecords);
+
   return {
-    country: countryRecord,
+    countries: dedupeCountries(allCountryRecords),
     tournament: tournamentRecord,
     season: seasonRecord,
     city: cityRecord,
     stadium: stadiumRecord,
-    referee: refereeRecord
+    referee: refereeRecord,
+    managers
   };
+};
+
+const dedupeCountries = (countries: CountryRecord[]): CountryRecord[] => {
+  const seen = new Set<string>();
+
+  return countries.filter((countryRecord) => {
+    const key = `${countryRecord.source_slug}:${countryRecord.source_name}:${countryRecord.code2}:${countryRecord.code3}`;
+
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
 };

@@ -79,6 +79,17 @@ export type RefereeRecord = {
   edited: boolean;
 };
 
+export type ManagerRecord = {
+  id: string;
+  slug: string;
+  name: string;
+  short_name: string;
+  country: string;
+  source_id: string;
+  source: "sofascore";
+  edited: boolean;
+};
+
 type SofascoreCountry = {
   id: number;
   name: string;
@@ -103,6 +114,24 @@ type SofascoreTournament = {
 };
 
 type SofascoreEvent = {
+  homeTeam?: {
+    manager?: {
+      id: number;
+      name: string;
+      slug: string;
+      shortName?: string;
+      country?: SofascoreCountry;
+    };
+  };
+  awayTeam?: {
+    manager?: {
+      id: number;
+      name: string;
+      slug: string;
+      shortName?: string;
+      country?: SofascoreCountry;
+    };
+  };
   tournament?: SofascoreTournament;
   season?: {
     id: number;
@@ -150,10 +179,11 @@ export type SofascoreEventResponse = {
 };
 
 export type EventMetadata = {
-  country: CountryRecord | null;
+  countries: CountryRecord[];
   tournament: TournamentRecord | null;
   season: SeasonRecord | null;
   city: CityRecord | null;
   stadium: StadiumRecord | null;
   referee: RefereeRecord | null;
+  managers: ManagerRecord[];
 };
