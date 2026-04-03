@@ -5,12 +5,15 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@repo/utils": "workspace:*"
+  },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "pnpm --filter @repo/utils build && tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch",
-    "scrape": "tsc -p tsconfig.build.json > /dev/null 2>&1 && node dist/index.js",
+    "scrape": "pnpm run build > /dev/null 2>&1 && node dist/index.js",
     "lint": "eslint src --ext .ts",
     "test": "node --test",
-    "typecheck": "tsc -p tsconfig.build.json --noEmit"
+    "typecheck": "pnpm --filter @repo/utils build > /dev/null 2>&1 && tsc -p tsconfig.build.json --noEmit"
   }
 }

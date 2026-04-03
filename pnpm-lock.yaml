@@ -42,7 +42,13 @@ importers:
 
   packages/types: {}
 
-  services/sofascore: {}
+  packages/utils: {}
+
+  services/sofascore:
+    dependencies:
+      '@repo/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
 
 packages:
 

@@ -10,7 +10,7 @@
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
-    "scrape:sofascore": "pnpm --filter @services/sofascore exec tsc -p tsconfig.build.json > /dev/null 2>&1 && node services/sofascore/dist/index.js",
+    "scrape:sofascore": "pnpm --filter @services/sofascore scrape",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "format": "prettier --check .",

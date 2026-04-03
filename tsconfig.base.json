@@ -19,8 +19,7 @@
     "paths": {
       "@repo/config": ["packages/config/src/index.ts"],
       "@repo/logger": ["packages/logger/src/index.ts"],
-      "@repo/types": ["packages/types/src/index.ts"],
-      "@repo/*": ["packages/*/src"]
+      "@repo/types": ["packages/types/src/index.ts"]
     }
   }
 }

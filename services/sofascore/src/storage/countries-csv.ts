@@ -1,10 +1,12 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { ulid } from "ulid";
+import { slugify } from "@repo/utils";
 
 import type { CountryRecord } from "../types.js";
 
 const CSV_HEADER =
-  "id;slug;name;code2;code3;source_slug;source_code2;source_code3;source_name;sourcetranslated";
+  "id;slug;name;code2;code3;source_slug;source_code2;source_code3;source_name;source;translated";
+const SOURCE = "sofascore" as const;
 
 export const loadCountries = async (filePath: string): Promise<CountryRecord[]> => {
   try {
@@ -65,6 +67,7 @@ export const saveCountries = async (
       country.source_code2,
       country.source_code3,
       country.source_name,
+      country.source,
       String(country.sourcetranslated)
     ].join(";")
   );
@@ -93,6 +96,7 @@ const normalizeCountryRow = (header: string, row: string): CountryRecord => {
       source_code2: "",
       source_code3: "",
       source_name: name,
+      source: SOURCE,
       sourcetranslated: false
     });
   }
@@ -110,6 +114,7 @@ const normalizeCountryRow = (header: string, row: string): CountryRecord => {
       source_code2: "",
       source_code3: "",
       source_name: name,
+      source: SOURCE,
       sourcetranslated: false
     });
   }
@@ -124,6 +129,7 @@ const normalizeCountryRow = (header: string, row: string): CountryRecord => {
     source_code2 = "",
     source_code3 = "",
     source_name = "",
+    source = "sofascore",
     sourcetranslated = "false"
   ] = columns;
 
@@ -137,6 +143,7 @@ const normalizeCountryRow = (header: string, row: string): CountryRecord => {
     source_code2,
     source_code3,
     source_name,
+    source: source === SOURCE ? SOURCE : SOURCE,
     sourcetranslated: sourcetranslated === "true"
   });
 };
@@ -152,6 +159,7 @@ const createCountry = (country: CountryRecord): CountryRecord =>
     source_code2: country.source_code2,
     source_code3: country.source_code3,
     source_name: country.source_name,
+    source: SOURCE,
     sourcetranslated: false
   });
 
@@ -167,7 +175,8 @@ const syncCountry = (existingCountry: CountryRecord, incomingCountry: CountryRec
     source_slug: incomingCountry.source_slug,
     source_code2: incomingCountry.source_code2,
     source_code3: incomingCountry.source_code3,
-    source_name: incomingCountry.source_name
+    source_name: incomingCountry.source_name,
+    source: SOURCE
   };
 
   if (!shouldSyncCanonicalFields) {
@@ -185,7 +194,7 @@ const syncCountry = (existingCountry: CountryRecord, incomingCountry: CountryRec
 
 const finalizeCountry = (country: CountryRecord): CountryRecord => {
   const normalizedId = country.id.trim() || createUlid();
-  const normalizedCountry = {
+  const baseCountry = {
     id: normalizedId,
     slug: country.slug.trim(),
     name: country.name.trim(),
@@ -195,7 +204,13 @@ const finalizeCountry = (country: CountryRecord): CountryRecord => {
     source_code2: country.source_code2.trim(),
     source_code3: country.source_code3.trim(),
     source_name: country.source_name.trim(),
+    source: SOURCE,
     sourcetranslated: false
+  };
+  const translated = isTranslated(baseCountry) || country.sourcetranslated;
+  const normalizedCountry = {
+    ...baseCountry,
+    slug: translated ? slugify(baseCountry.name) : baseCountry.slug
   };
 
   return {

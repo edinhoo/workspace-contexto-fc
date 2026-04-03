@@ -26,6 +26,7 @@ export const fetchCountryByEventId = async (
     source_code2: country.alpha2 ?? "",
     source_code3: country.alpha3 ?? "",
     source_name: country.name,
+    source: "sofascore",
     sourcetranslated: false
   };
 };

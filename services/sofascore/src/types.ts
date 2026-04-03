@@ -8,6 +8,7 @@ export type CountryRecord = {
   source_code2: string;
   source_code3: string;
   source_name: string;
+  source: "sofascore";
   sourcetranslated: boolean;
 };
 
