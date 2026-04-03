@@ -43,6 +43,17 @@ export type SeasonRecord = {
   translated: boolean;
 };
 
+export type CityRecord = {
+  id: string;
+  slug: string;
+  name: string;
+  short_name: string;
+  country: string;
+  source_name: string;
+  source: "sofascore";
+  edited: boolean;
+};
+
 type SofascoreCountry = {
   id: number;
   name: string;
@@ -73,6 +84,17 @@ type SofascoreEvent = {
     name: string;
     year?: string;
   };
+  venue?: {
+    country?: {
+      alpha2?: string;
+      alpha3?: string;
+      name: string;
+      slug: string;
+    };
+    city?: {
+      name: string;
+    };
+  };
 };
 
 export type SofascoreEventResponse = {
@@ -83,4 +105,5 @@ export type EventMetadata = {
   country: CountryRecord | null;
   tournament: TournamentRecord | null;
   season: SeasonRecord | null;
+  city: CityRecord | null;
 };

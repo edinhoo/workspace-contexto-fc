@@ -1,4 +1,5 @@
 import type {
+  CityRecord,
   CountryRecord,
   EventMetadata,
   SeasonRecord,
@@ -20,8 +21,11 @@ export const fetchEventMetadataByEventId = async (
   const payload = (await response.json()) as SofascoreEventResponse;
   const tournament = payload.event?.tournament;
   const season = payload.event?.season;
+  const venue = payload.event?.venue;
   const country = tournament?.category?.country;
   const uniqueTournament = tournament?.uniqueTournament;
+  const venueCountry = venue?.country;
+  const city = venue?.city;
 
   const countryRecord: CountryRecord | null = country
     ? {
@@ -76,9 +80,24 @@ export const fetchEventMetadataByEventId = async (
         }
       : null;
 
+  const cityRecord: CityRecord | null =
+    city && venueCountry
+      ? {
+          id: "",
+          slug: "",
+          name: city.name,
+          short_name: city.name,
+          country: venueCountry.slug,
+          source_name: city.name,
+          source: SOURCE,
+          edited: false
+        }
+      : null;
+
   return {
     country: countryRecord,
     tournament: tournamentRecord,
-    season: seasonRecord
+    season: seasonRecord,
+    city: cityRecord
   };
 };
