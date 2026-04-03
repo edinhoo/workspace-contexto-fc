@@ -1,33 +1,20 @@
-import { readFile, writeFile } from "node:fs/promises";
-import { ulid } from "ulid";
 import { slugify } from "@repo/utils";
 
 import type { CountryRecord } from "../types.js";
+import { compareEntityIds, createEntityId, loadCsvRows, saveCsvRows } from "./shared/csv.js";
 
 const CSV_HEADER =
   "id;slug;name;code2;code3;source_slug;source_code2;source_code3;source_name;source;translated";
 const SOURCE = "sofascore" as const;
 
 export const loadCountries = async (filePath: string): Promise<CountryRecord[]> => {
-  try {
-    const content = await readFile(filePath, "utf8");
-    const lines = content
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean);
+  const { header, rows } = await loadCsvRows(filePath);
 
-    if (lines.length <= 1) {
-      return [];
-    }
-
-    return normalizeCountries(lines[0], lines.slice(1));
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return [];
-    }
-
-    throw error;
+  if (!header || rows.length === 0) {
+    return [];
   }
+
+  return normalizeCountries(header, rows);
 };
 
 export const upsertCountries = (
@@ -72,7 +59,7 @@ export const saveCountries = async (
     ].join(";")
   );
 
-  await writeFile(filePath, `${[CSV_HEADER, ...rows].join("\n")}\n`, "utf8");
+  await saveCsvRows(filePath, CSV_HEADER, rows);
 };
 
 const normalizeCountries = (header: string, rows: string[]): CountryRecord[] => {
@@ -150,7 +137,7 @@ const normalizeCountryRow = (header: string, row: string): CountryRecord => {
 
 const createCountry = (country: CountryRecord): CountryRecord =>
   finalizeCountry({
-    id: createUlid(),
+    id: createEntityId(),
     slug: country.source_slug,
     name: country.source_name,
     code2: country.source_code2,
@@ -193,7 +180,7 @@ const syncCountry = (existingCountry: CountryRecord, incomingCountry: CountryRec
 };
 
 const finalizeCountry = (country: CountryRecord): CountryRecord => {
-  const normalizedId = country.id.trim() || createUlid();
+  const normalizedId = country.id.trim() || createEntityId();
   const baseCountry = {
     id: normalizedId,
     slug: country.slug.trim(),
@@ -234,8 +221,4 @@ const isTranslated = (country: Omit<CountryRecord, "sourcetranslated">): boolean
 const sortCountries = (countries: CountryRecord[]): CountryRecord[] =>
   [...countries].sort((left, right) => compareIds(left.id, right.id));
 
-const compareIds = (leftId: string, rightId: string): number => {
-  return leftId.localeCompare(rightId);
-};
-
-const createUlid = (): string => ulid();
+const compareIds = (leftId: string, rightId: string): number => compareEntityIds(leftId, rightId);

@@ -12,6 +12,23 @@ export type CountryRecord = {
   sourcetranslated: boolean;
 };
 
+export type TournamentRecord = {
+  id: string;
+  slug: string;
+  name: string;
+  short_name: string;
+  country: string;
+  primary_color: string;
+  secondary_color: string;
+  source_id: string;
+  source_slug: string;
+  source_name: string;
+  source_primary_color: string;
+  source_secondary_color: string;
+  source: "sofascore";
+  translated: boolean;
+};
+
 type SofascoreCountry = {
   id: number;
   name: string;
@@ -25,7 +42,14 @@ type SofascoreCategory = {
 };
 
 type SofascoreTournament = {
+  name: string;
+  slug: string;
   category?: SofascoreCategory;
+  uniqueTournament?: {
+    id: number;
+    primaryColorHex?: string;
+    secondaryColorHex?: string;
+  };
 };
 
 type SofascoreEvent = {
@@ -34,4 +58,9 @@ type SofascoreEvent = {
 
 export type SofascoreEventResponse = {
   event?: SofascoreEvent;
+};
+
+export type EventMetadata = {
+  country: CountryRecord | null;
+  tournament: TournamentRecord | null;
 };
