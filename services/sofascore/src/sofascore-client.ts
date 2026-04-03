@@ -3,6 +3,7 @@ import type {
   CountryRecord,
   EventMetadata,
   SeasonRecord,
+  StadiumRecord,
   SofascoreEventResponse,
   TournamentRecord
 } from "./types.js";
@@ -26,6 +27,8 @@ export const fetchEventMetadataByEventId = async (
   const uniqueTournament = tournament?.uniqueTournament;
   const venueCountry = venue?.country;
   const city = venue?.city;
+  const stadium = venue?.stadium;
+  const venueCoordinates = venue?.venueCoordinates;
 
   const countryRecord: CountryRecord | null = country
     ? {
@@ -94,10 +97,30 @@ export const fetchEventMetadataByEventId = async (
         }
       : null;
 
+  const stadiumRecord: StadiumRecord | null =
+    venue && venueCountry && city && venue.id
+      ? {
+          id: "",
+          slug: "",
+          name: stadium?.name || venue.name || "",
+          short_name: stadium?.name || venue.name || "",
+          city: city.name,
+          capacity: String(stadium?.capacity ?? venue.capacity ?? ""),
+          latitude:
+            venueCoordinates?.latitude !== undefined ? String(venueCoordinates.latitude) : "",
+          longitude:
+            venueCoordinates?.longitude !== undefined ? String(venueCoordinates.longitude) : "",
+          source_id: String(venue.id),
+          source: SOURCE,
+          edited: false
+        }
+      : null;
+
   return {
     country: countryRecord,
     tournament: tournamentRecord,
     season: seasonRecord,
-    city: cityRecord
+    city: cityRecord,
+    stadium: stadiumRecord
   };
 };

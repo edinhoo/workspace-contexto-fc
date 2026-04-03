@@ -54,6 +54,20 @@ export type CityRecord = {
   edited: boolean;
 };
 
+export type StadiumRecord = {
+  id: string;
+  slug: string;
+  name: string;
+  short_name: string;
+  city: string;
+  capacity: string;
+  latitude: string;
+  longitude: string;
+  source_id: string;
+  source: "sofascore";
+  edited: boolean;
+};
+
 type SofascoreCountry = {
   id: number;
   name: string;
@@ -85,6 +99,14 @@ type SofascoreEvent = {
     year?: string;
   };
   venue?: {
+    id?: number;
+    slug?: string;
+    name?: string;
+    capacity?: number;
+    venueCoordinates?: {
+      latitude?: number;
+      longitude?: number;
+    };
     country?: {
       alpha2?: string;
       alpha3?: string;
@@ -93,6 +115,10 @@ type SofascoreEvent = {
     };
     city?: {
       name: string;
+    };
+    stadium?: {
+      name?: string;
+      capacity?: number;
     };
   };
 };
@@ -106,4 +132,5 @@ export type EventMetadata = {
   tournament: TournamentRecord | null;
   season: SeasonRecord | null;
   city: CityRecord | null;
+  stadium: StadiumRecord | null;
 };
