@@ -1,4 +1,10 @@
-import type { CountryRecord, EventMetadata, SofascoreEventResponse, TournamentRecord } from "./types.js";
+import type {
+  CountryRecord,
+  EventMetadata,
+  SeasonRecord,
+  SofascoreEventResponse,
+  TournamentRecord
+} from "./types.js";
 
 const SOURCE = "sofascore" as const;
 
@@ -13,6 +19,7 @@ export const fetchEventMetadataByEventId = async (
 
   const payload = (await response.json()) as SofascoreEventResponse;
   const tournament = payload.event?.tournament;
+  const season = payload.event?.season;
   const country = tournament?.category?.country;
   const uniqueTournament = tournament?.uniqueTournament;
 
@@ -52,8 +59,26 @@ export const fetchEventMetadataByEventId = async (
         }
       : null;
 
+  const seasonRecord: SeasonRecord | null =
+    season && uniqueTournament
+      ? {
+          id: "",
+          slug: "",
+          name: season.name,
+          short_name: season.name,
+          year: season.year ?? "",
+          tournament: String(uniqueTournament.id),
+          source_id: String(season.id),
+          source_name: season.name,
+          source_year: season.year ?? "",
+          source: SOURCE,
+          translated: false
+        }
+      : null;
+
   return {
     country: countryRecord,
-    tournament: tournamentRecord
+    tournament: tournamentRecord,
+    season: seasonRecord
   };
 };

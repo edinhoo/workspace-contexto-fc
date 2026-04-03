@@ -10,11 +10,18 @@ import {
   saveTournaments,
   upsertTournaments
 } from "./storage/tournaments-csv.js";
-import type { CountryRecord, TournamentRecord } from "./types.js";
+import {
+  loadSeasons,
+  relinkSeasonTournaments,
+  saveSeasons,
+  upsertSeasons
+} from "./storage/seasons-csv.js";
+import type { CountryRecord, SeasonRecord, TournamentRecord } from "./types.js";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const countriesCsvPath = resolve(currentDir, "../data/countries.csv");
 const tournamentsCsvPath = resolve(currentDir, "../data/tournaments.csv");
+const seasonsCsvPath = resolve(currentDir, "../data/seasons.csv");
 
 const eventIds = process.argv.slice(2);
 
@@ -28,6 +35,7 @@ const run = async (): Promise<void> => {
 
   const existingCountries = await loadCountries(countriesCsvPath);
   const existingTournaments = await loadTournaments(tournamentsCsvPath);
+  const existingSeasons = await loadSeasons(seasonsCsvPath);
   const fetchedCountries = await Promise.all(
     eventIds.map(async (eventId) => {
       try {
@@ -46,6 +54,9 @@ const run = async (): Promise<void> => {
   const validTournaments = fetchedCountries
     .map((eventMetadata) => eventMetadata?.tournament ?? null)
     .filter((tournament): tournament is TournamentRecord => tournament !== null);
+  const validSeasons = fetchedCountries
+    .map((eventMetadata) => eventMetadata?.season ?? null)
+    .filter((season): season is SeasonRecord => season !== null);
 
   const mergedCountries = upsertCountries(existingCountries, validCountries);
   const mergedTournaments = upsertTournaments(
@@ -53,9 +64,15 @@ const run = async (): Promise<void> => {
     validTournaments.map((tournament) => linkTournamentCountry(tournament, mergedCountries))
   );
   const normalizedTournaments = relinkTournamentCountries(mergedTournaments, mergedCountries);
+  const mergedSeasons = upsertSeasons(
+    existingSeasons,
+    validSeasons.map((season) => linkSeasonTournament(season, normalizedTournaments))
+  );
+  const normalizedSeasons = relinkSeasonTournaments(mergedSeasons, normalizedTournaments);
 
   await saveCountries(countriesCsvPath, mergedCountries);
   await saveTournaments(tournamentsCsvPath, normalizedTournaments);
+  await saveSeasons(seasonsCsvPath, normalizedSeasons);
 
   console.log(
     `countries.csv atualizado com ${validCountries.length} item(ns) processado(s).`
@@ -63,6 +80,7 @@ const run = async (): Promise<void> => {
   console.log(
     `tournaments.csv atualizado com ${validTournaments.length} item(ns) processado(s).`
   );
+  console.log(`seasons.csv atualizado com ${validSeasons.length} item(ns) processado(s).`);
 };
 
 const linkTournamentCountry = (
@@ -80,6 +98,25 @@ const linkTournamentCountry = (
   return {
     ...tournament,
     country: linkedCountry.id
+  };
+};
+
+const linkSeasonTournament = (
+  season: SeasonRecord,
+  tournaments: TournamentRecord[]
+): SeasonRecord => {
+  const linkedTournament = tournaments.find(
+    (tournament) =>
+      tournament.source_id === season.tournament || tournament.id === season.tournament
+  );
+
+  if (!linkedTournament) {
+    return season;
+  }
+
+  return {
+    ...season,
+    tournament: linkedTournament.id
   };
 };
 
