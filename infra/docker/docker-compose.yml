@@ -1,0 +1,13 @@
+name: contexto-fc
+
+services:
+  # Adicione futuros serviços locais aqui.
+  # Exemplo:
+  # api:
+  #   build:
+  #     context: ../..
+  #     dockerfile: services/api/Dockerfile
+  #   env_file:
+  #     - ../../services/api/.env
+  #   ports:
+  #     - "3000:3000"

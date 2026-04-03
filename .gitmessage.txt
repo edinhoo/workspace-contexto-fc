@@ -1,0 +1,16 @@
+<tipo>(<escopo>): <resumo curto>
+
+Contexto:
+- 
+
+O que foi feito:
+- 
+
+Impactos:
+- 
+
+Validacao:
+- [ ] build
+- [ ] lint
+- [ ] test
+- [ ] typecheck
