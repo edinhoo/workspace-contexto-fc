@@ -68,6 +68,17 @@ export type StadiumRecord = {
   edited: boolean;
 };
 
+export type RefereeRecord = {
+  id: string;
+  slug: string;
+  name: string;
+  short_name: string;
+  country: string;
+  source_id: string;
+  source: "sofascore";
+  edited: boolean;
+};
+
 type SofascoreCountry = {
   id: number;
   name: string;
@@ -121,6 +132,17 @@ type SofascoreEvent = {
       capacity?: number;
     };
   };
+  referee?: {
+    id: number;
+    name: string;
+    slug: string;
+    country?: {
+      alpha2?: string;
+      alpha3?: string;
+      name: string;
+      slug: string;
+    };
+  };
 };
 
 export type SofascoreEventResponse = {
@@ -133,4 +155,5 @@ export type EventMetadata = {
   season: SeasonRecord | null;
   city: CityRecord | null;
   stadium: StadiumRecord | null;
+  referee: RefereeRecord | null;
 };
