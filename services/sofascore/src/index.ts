@@ -109,7 +109,9 @@ const run = async (): Promise<void> => {
 
             return {
               countries: [],
-              players: []
+              players: [],
+              homeFormation: "",
+              awayFormation: ""
             };
           })
         ]);
@@ -149,7 +151,17 @@ const run = async (): Promise<void> => {
     .filter((referee): referee is RefereeRecord => referee !== null);
   const validManagers = fetchedData.flatMap((entry) => entry?.eventMetadata.managers ?? []);
   const validMatches = fetchedData
-    .map((entry) => entry?.eventMetadata.match ?? null)
+    .map((entry) => {
+      if (!entry?.eventMetadata.match) {
+        return null;
+      }
+
+      return {
+        ...entry.eventMetadata.match,
+        home_formation: entry.lineupMetadata.homeFormation,
+        away_formation: entry.lineupMetadata.awayFormation
+      };
+    })
     .filter((match): match is MatchRecord => match !== null);
   const validPlayers = fetchedData.flatMap((entry) => entry?.lineupMetadata.players ?? []);
   const validTeams = fetchedData.flatMap((entry) => entry?.eventMetadata.teams ?? []);

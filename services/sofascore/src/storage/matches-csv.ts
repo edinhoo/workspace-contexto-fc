@@ -10,7 +10,7 @@ import type {
 import { compareEntityIds, createEntityId, loadCsvRows, saveCsvRows } from "./shared/csv.js";
 
 const CSV_HEADER =
-  "id;tournament;season;round;stadium;referee;home_team;home_manager;home_score_period_1;home_score_period_2;home_score_normaltime;home_score_extra_1;home_score_extra_2;home_score_overtime;home_score_penalties;away_team;away_manager;away_score_period_1;away_score_period_2;away_score_normaltime;away_score_extra_1;away_score_extra_2;away_score_overtime;away_score_penalties;start_time;period_start_time;injury_time_1;injury_time_2;injury_time_3;injury_time_4;source_id;source;edited";
+  "id;tournament;season;round;stadium;referee;home_team;home_manager;home_formation;home_score_period_1;home_score_period_2;home_score_normaltime;home_score_extra_1;home_score_extra_2;home_score_overtime;home_score_penalties;away_team;away_manager;away_formation;away_score_period_1;away_score_period_2;away_score_normaltime;away_score_extra_1;away_score_extra_2;away_score_overtime;away_score_penalties;start_time;period_start_time;injury_time_1;injury_time_2;injury_time_3;injury_time_4;source_id;source;edited";
 const SOURCE = "sofascore" as const;
 
 export const loadMatches = async (filePath: string): Promise<MatchRecord[]> => {
@@ -83,6 +83,7 @@ export const saveMatches = async (filePath: string, matches: MatchRecord[]): Pro
       match.referee,
       match.home_team,
       match.home_manager,
+      match.home_formation,
       match.home_score_period_1,
       match.home_score_period_2,
       match.home_score_normaltime,
@@ -92,6 +93,7 @@ export const saveMatches = async (filePath: string, matches: MatchRecord[]): Pro
       match.home_score_penalties,
       match.away_team,
       match.away_manager,
+      match.away_formation,
       match.away_score_period_1,
       match.away_score_period_2,
       match.away_score_normaltime,
@@ -117,6 +119,84 @@ export const saveMatches = async (filePath: string, matches: MatchRecord[]): Pro
 const normalizeMatchRow = (row: string): MatchRecord => {
   const columns = row.split(";");
 
+  if (
+    columns.length === 33
+  ) {
+    const [
+      id = "",
+      tournament = "",
+      season = "",
+      round = "",
+      stadium = "",
+      referee = "",
+      home_team = "",
+      home_manager = "",
+      home_score_period_1 = "",
+      home_score_period_2 = "",
+      home_score_normaltime = "",
+      home_score_extra_1 = "",
+      home_score_extra_2 = "",
+      home_score_overtime = "",
+      home_score_penalties = "",
+      away_team = "",
+      away_manager = "",
+      away_score_period_1 = "",
+      away_score_period_2 = "",
+      away_score_normaltime = "",
+      away_score_extra_1 = "",
+      away_score_extra_2 = "",
+      away_score_overtime = "",
+      away_score_penalties = "",
+      start_time = "",
+      period_start_time = "",
+      injury_time_1 = "",
+      injury_time_2 = "",
+      injury_time_3 = "",
+      injury_time_4 = "",
+      source_id = "",
+      source = SOURCE,
+      edited = "false"
+    ] = columns;
+
+    return finalizeMatch({
+      id,
+      tournament,
+      season,
+      round,
+      stadium,
+      referee,
+      home_team,
+      home_manager,
+      home_formation: "",
+      home_score_period_1,
+      home_score_period_2,
+      home_score_normaltime,
+      home_score_extra_1,
+      home_score_extra_2,
+      home_score_overtime,
+      home_score_penalties,
+      away_team,
+      away_manager,
+      away_formation: "",
+      away_score_period_1,
+      away_score_period_2,
+      away_score_normaltime,
+      away_score_extra_1,
+      away_score_extra_2,
+      away_score_overtime,
+      away_score_penalties,
+      start_time,
+      period_start_time,
+      injury_time_1,
+      injury_time_2,
+      injury_time_3,
+      injury_time_4,
+      source_id,
+      source: source === SOURCE ? SOURCE : SOURCE,
+      edited: edited === "true"
+    });
+  }
+
   const [
     id = "",
     tournament = "",
@@ -126,6 +206,7 @@ const normalizeMatchRow = (row: string): MatchRecord => {
     referee = "",
     home_team = "",
     home_manager = "",
+    home_formation = "",
     home_score_period_1 = "",
     home_score_period_2 = "",
     home_score_normaltime = "",
@@ -135,6 +216,7 @@ const normalizeMatchRow = (row: string): MatchRecord => {
     home_score_penalties = "",
     away_team = "",
     away_manager = "",
+    away_formation = "",
     away_score_period_1 = "",
     away_score_period_2 = "",
     away_score_normaltime = "",
@@ -162,6 +244,7 @@ const normalizeMatchRow = (row: string): MatchRecord => {
     referee,
     home_team,
     home_manager,
+    home_formation,
     home_score_period_1,
     home_score_period_2,
     home_score_normaltime,
@@ -171,6 +254,7 @@ const normalizeMatchRow = (row: string): MatchRecord => {
     home_score_penalties,
     away_team,
     away_manager,
+    away_formation,
     away_score_period_1,
     away_score_period_2,
     away_score_normaltime,
@@ -216,6 +300,7 @@ const syncMatch = (existingMatch: MatchRecord, incomingMatch: MatchRecord): Matc
     referee: incomingMatch.referee,
     home_team: incomingMatch.home_team,
     home_manager: incomingMatch.home_manager,
+    home_formation: incomingMatch.home_formation,
     home_score_period_1: incomingMatch.home_score_period_1,
     home_score_period_2: incomingMatch.home_score_period_2,
     home_score_normaltime: incomingMatch.home_score_normaltime,
@@ -225,6 +310,7 @@ const syncMatch = (existingMatch: MatchRecord, incomingMatch: MatchRecord): Matc
     home_score_penalties: incomingMatch.home_score_penalties,
     away_team: incomingMatch.away_team,
     away_manager: incomingMatch.away_manager,
+    away_formation: incomingMatch.away_formation,
     away_score_period_1: incomingMatch.away_score_period_1,
     away_score_period_2: incomingMatch.away_score_period_2,
     away_score_normaltime: incomingMatch.away_score_normaltime,
@@ -252,6 +338,7 @@ const finalizeMatch = (match: MatchRecord): MatchRecord => ({
   referee: match.referee.trim(),
   home_team: match.home_team.trim(),
   home_manager: match.home_manager.trim(),
+  home_formation: match.home_formation.trim(),
   home_score_period_1: match.home_score_period_1.trim(),
   home_score_period_2: match.home_score_period_2.trim(),
   home_score_normaltime: match.home_score_normaltime.trim(),
@@ -261,6 +348,7 @@ const finalizeMatch = (match: MatchRecord): MatchRecord => ({
   home_score_penalties: match.home_score_penalties.trim(),
   away_team: match.away_team.trim(),
   away_manager: match.away_manager.trim(),
+  away_formation: match.away_formation.trim(),
   away_score_period_1: match.away_score_period_1.trim(),
   away_score_period_2: match.away_score_period_2.trim(),
   away_score_normaltime: match.away_score_normaltime.trim(),

@@ -208,7 +208,9 @@ export const fetchEventLineupsByEventId = async (
 
   return {
     countries,
-    players
+    players,
+    homeFormation: payload.home?.formation?.trim() ?? "",
+    awayFormation: payload.away?.formation?.trim() ?? ""
   };
 };
 
@@ -353,6 +355,7 @@ const createMatchRecord = (event: {
   refereeId?: number;
   homeTeamId?: number;
   homeManagerId?: number;
+  homeFormation?: string;
   homeScore?: {
     period1?: number;
     period2?: number;
@@ -364,6 +367,7 @@ const createMatchRecord = (event: {
   };
   awayTeamId?: number;
   awayManagerId?: number;
+  awayFormation?: string;
   awayScore?: {
     period1?: number;
     period2?: number;
@@ -388,6 +392,7 @@ const createMatchRecord = (event: {
   referee: stringifyOptionalNumber(event.refereeId),
   home_team: stringifyOptionalNumber(event.homeTeamId),
   home_manager: stringifyOptionalNumber(event.homeManagerId),
+  home_formation: event.homeFormation?.trim() ?? "",
   home_score_period_1: stringifyOptionalNumber(event.homeScore?.period1),
   home_score_period_2: stringifyOptionalNumber(event.homeScore?.period2),
   home_score_normaltime: stringifyOptionalNumber(event.homeScore?.normaltime),
@@ -397,6 +402,7 @@ const createMatchRecord = (event: {
   home_score_penalties: stringifyOptionalNumber(event.homeScore?.penalties),
   away_team: stringifyOptionalNumber(event.awayTeamId),
   away_manager: stringifyOptionalNumber(event.awayManagerId),
+  away_formation: event.awayFormation?.trim() ?? "",
   away_score_period_1: stringifyOptionalNumber(event.awayScore?.period1),
   away_score_period_2: stringifyOptionalNumber(event.awayScore?.period2),
   away_score_normaltime: stringifyOptionalNumber(event.awayScore?.normaltime),

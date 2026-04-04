@@ -131,6 +131,7 @@ export type MatchRecord = {
   referee: string;
   home_team: string;
   home_manager: string;
+  home_formation: string;
   home_score_period_1: string;
   home_score_period_2: string;
   home_score_normaltime: string;
@@ -140,6 +141,7 @@ export type MatchRecord = {
   home_score_penalties: string;
   away_team: string;
   away_manager: string;
+  away_formation: string;
   away_score_period_1: string;
   away_score_period_2: string;
   away_score_normaltime: string;
@@ -359,10 +361,12 @@ export type SofascoreLineupsResponse = {
   home?: {
     players?: SofascoreLineupPlayer[];
     missingPlayers?: SofascoreLineupPlayer[];
+    formation?: string;
   };
   away?: {
     players?: SofascoreLineupPlayer[];
     missingPlayers?: SofascoreLineupPlayer[];
+    formation?: string;
   };
 };
 
@@ -381,4 +385,6 @@ export type EventMetadata = {
 export type EventLineupsMetadata = {
   countries: CountryRecord[];
   players: PlayerRecord[];
+  homeFormation: string;
+  awayFormation: string;
 };
