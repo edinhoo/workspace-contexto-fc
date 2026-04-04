@@ -160,6 +160,49 @@ export type MatchRecord = {
   edited: boolean;
 };
 
+export type EventRecord = {
+  id: string;
+  match: string;
+  sort_order: string;
+  team: string;
+  player: string;
+  related_player: string;
+  manager: string;
+  incident_type: string;
+  incident_class: string;
+  period: string;
+  minute: string;
+  added_time: string;
+  reversed_period_time: string;
+  is_home: string;
+  impact_side: string;
+  is_confirmed: string;
+  is_rescinded: string;
+  reason: string;
+  description: string;
+  is_injury: string;
+  home_score: string;
+  away_score: string;
+  length: string;
+  body_part: string;
+  goal_type: string;
+  situation: string;
+  shot_type: string;
+  player_x: string;
+  player_y: string;
+  pass_end_x: string;
+  pass_end_y: string;
+  shot_x: string;
+  shot_y: string;
+  goal_mouth_x: string;
+  goal_mouth_y: string;
+  goalkeeper_x: string;
+  goalkeeper_y: string;
+  source_id: string;
+  source: "sofascore";
+  edited: boolean;
+};
+
 export type LineupRecord = {
   id: string;
   match: string;
@@ -675,6 +718,103 @@ export type SofascoreAveragePositionsResponse = {
   }>;
 };
 
+export type SofascoreIncidentPlayer = {
+  id?: number;
+  name?: string;
+  slug?: string;
+  shortName?: string;
+};
+
+export type SofascoreFootballPassingAction = {
+  player?: SofascoreIncidentPlayer;
+  eventType?: string;
+  isAssist?: boolean;
+  bodyPart?: string;
+  goalType?: string;
+  playerCoordinates?: {
+    x?: number;
+    y?: number;
+  };
+  passEndCoordinates?: {
+    x?: number;
+    y?: number;
+  };
+  goalShotCoordinates?: {
+    x?: number;
+    y?: number;
+  };
+  goalMouthCoordinates?: {
+    x?: number;
+    y?: number;
+  };
+  gkCoordinates?: {
+    x?: number;
+    y?: number;
+  };
+};
+
+export type SofascoreIncident = {
+  id?: number;
+  incidentType?: string;
+  incidentClass?: string;
+  text?: string;
+  time?: number;
+  addedTime?: number;
+  reversedPeriodTime?: number;
+  isHome?: boolean;
+  isLive?: boolean;
+  confirmed?: boolean;
+  rescinded?: boolean;
+  reason?: string;
+  description?: string;
+  injury?: boolean;
+  length?: number;
+  from?: string;
+  homeScore?: number;
+  awayScore?: number;
+  player?: SofascoreIncidentPlayer;
+  assist1?: SofascoreIncidentPlayer;
+  playerIn?: SofascoreIncidentPlayer;
+  playerOut?: SofascoreIncidentPlayer;
+  manager?: {
+    id?: number;
+    name?: string;
+    slug?: string;
+    shortName?: string;
+  };
+  footballPassingNetworkAction?: SofascoreFootballPassingAction[];
+};
+
+export type SofascoreIncidentsResponse = {
+  incidents?: SofascoreIncident[];
+};
+
+export type SofascoreShotmapItem = {
+  id?: number;
+  time?: number;
+  addedTime?: number;
+  isHome?: boolean;
+  shotType?: string;
+  goalType?: string;
+  situation?: string;
+  bodyPart?: string;
+  player?: SofascoreIncidentPlayer;
+  playerCoordinates?: {
+    x?: number;
+    y?: number;
+    z?: number;
+  };
+  goalMouthCoordinates?: {
+    x?: number;
+    y?: number;
+    z?: number;
+  };
+};
+
+export type SofascoreShotmapResponse = {
+  shotmap?: SofascoreShotmapItem[];
+};
+
 export type EventMetadata = {
   countries: CountryRecord[];
   tournament: TournamentRecord | null;
@@ -694,4 +834,8 @@ export type EventLineupsMetadata = {
   playerMatchStats: PlayerMatchStatRecord[];
   homeFormation: string;
   awayFormation: string;
+};
+
+export type EventIncidentsMetadata = {
+  events: EventRecord[];
 };

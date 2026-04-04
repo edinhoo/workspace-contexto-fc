@@ -2,9 +2,19 @@ import { mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { fetchEventLineupsByEventId, fetchEventMetadataByEventId } from "./sofascore-client.js";
+import {
+  fetchEventIncidentsByEventId,
+  fetchEventLineupsByEventId,
+  fetchEventMetadataByEventId
+} from "./sofascore-client.js";
 import { loadCountries, saveCountries, upsertCountries } from "./storage/countries-csv.js";
 import { loadCities, relinkCityCountries, saveCities, upsertCities } from "./storage/cities-csv.js";
+import {
+  loadEvents,
+  relinkEventReferences,
+  saveEvents,
+  upsertEvents
+} from "./storage/events-csv.js";
 import {
   loadStadiums,
   relinkStadiumReferences,
@@ -72,6 +82,7 @@ import {
 import type {
   CityRecord,
   CountryRecord,
+  EventRecord,
   ManagerRecord,
   MatchRecord,
   PlayerRecord,
@@ -85,6 +96,7 @@ import type {
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const countriesCsvPath = resolve(currentDir, "../data/countries.csv");
 const citiesCsvPath = resolve(currentDir, "../data/cities.csv");
+const eventsCsvPath = resolve(currentDir, "../data/events.csv");
 const stadiumsCsvPath = resolve(currentDir, "../data/stadiums.csv");
 const managersCsvPath = resolve(currentDir, "../data/managers.csv");
 const lineupsCsvPath = resolve(currentDir, "../data/lineups.csv");
@@ -109,6 +121,7 @@ const run = async (): Promise<void> => {
 
   const existingCountries = await loadCountries(countriesCsvPath);
   const existingCities = await loadCities(citiesCsvPath);
+  const existingEvents = await loadEvents(eventsCsvPath);
   const existingStadiums = await loadStadiums(stadiumsCsvPath);
   const existingManagers = await loadManagers(managersCsvPath);
   const existingLineups = await loadLineups(lineupsCsvPath);
@@ -122,7 +135,7 @@ const run = async (): Promise<void> => {
   const fetchedData = await Promise.all(
     eventIds.map(async (eventId) => {
       try {
-        const [eventMetadata, lineupMetadata] = await Promise.all([
+        const [eventMetadata, lineupMetadata, incidentsMetadata] = await Promise.all([
           fetchEventMetadataByEventId(eventId),
           fetchEventLineupsByEventId(eventId).catch((error) => {
             const message = error instanceof Error ? error.message : "Erro desconhecido";
@@ -136,12 +149,21 @@ const run = async (): Promise<void> => {
               homeFormation: "",
               awayFormation: ""
             };
+          }),
+          fetchEventIncidentsByEventId(eventId).catch((error) => {
+            const message = error instanceof Error ? error.message : "Erro desconhecido";
+            console.error(`Falha ao processar os events do evento ${eventId}: ${message}`);
+
+            return {
+              events: []
+            };
           })
         ]);
 
         return {
           eventMetadata,
-          lineupMetadata
+          lineupMetadata,
+          incidentsMetadata
         };
       } catch (error) {
         const message = formatErrorMessage(error);
@@ -163,6 +185,9 @@ const run = async (): Promise<void> => {
   const validCities = fetchedData
     .flatMap((entry) => entry?.eventMetadata.cities ?? [])
     .filter((city): city is CityRecord => city !== null);
+  const validEvents = fetchedData
+    .flatMap((entry) => entry?.incidentsMetadata.events ?? [])
+    .filter((event): event is EventRecord => event !== null);
   const validSeasons = fetchedData
     .map((entry) => entry?.eventMetadata.season ?? null)
     .filter((season): season is SeasonRecord => season !== null);
@@ -243,6 +268,13 @@ const run = async (): Promise<void> => {
     managers: normalizedManagers,
     teams: normalizedTeams
   });
+  const mergedEvents = upsertEvents(existingEvents, validEvents);
+  const normalizedEvents = relinkEventReferences(mergedEvents, {
+    matches: normalizedMatches,
+    teams: normalizedTeams,
+    players: normalizedPlayers,
+    managers: normalizedManagers
+  });
   const mergedLineups = upsertLineups(existingLineups, validLineups);
   const normalizedLineups = relinkLineupReferences(mergedLineups, {
     matches: normalizedMatches,
@@ -265,6 +297,7 @@ const run = async (): Promise<void> => {
 
   await saveCountries(countriesCsvPath, mergedCountries);
   await saveCities(citiesCsvPath, normalizedCities);
+  await saveEvents(eventsCsvPath, normalizedEvents);
   await saveStadiums(stadiumsCsvPath, normalizedStadiums);
   await saveTeams(teamsCsvPath, normalizedTeams);
   await saveManagers(managersCsvPath, normalizedManagers);
@@ -281,6 +314,7 @@ const run = async (): Promise<void> => {
     `countries.csv atualizado com ${validCountries.length} item(ns) processado(s).`
   );
   console.log(`cities.csv atualizado com ${validCities.length} item(ns) processado(s).`);
+  console.log(`events.csv atualizado com ${validEvents.length} item(ns) processado(s).`);
   console.log(`stadiums.csv atualizado com ${validStadiums.length} item(ns) processado(s).`);
   console.log(`teams.csv atualizado com ${validTeams.length} item(ns) processado(s).`);
   console.log(`managers.csv atualizado com ${validManagers.length} item(ns) processado(s).`);

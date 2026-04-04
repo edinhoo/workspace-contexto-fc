@@ -1,7 +1,12 @@
 import type {
   CityRecord,
   CountryRecord,
+  EventIncidentsMetadata,
+  EventRecord,
   SofascoreAveragePositionsResponse,
+  SofascoreFootballPassingAction,
+  SofascoreIncident,
+  SofascoreIncidentsResponse,
   EventLineupsMetadata,
   EventMetadata,
   LineupRecord,
@@ -11,6 +16,8 @@ import type {
   PlayerRecord,
   RefereeRecord,
   SeasonRecord,
+  SofascoreShotmapItem,
+  SofascoreShotmapResponse,
   SofascoreLineupPlayer,
   SofascoreEventResponse,
   SofascoreLineupsResponse,
@@ -208,10 +215,14 @@ export const fetchEventLineupsByEventId = async (
     ...(payload.away?.players ?? []),
     ...(payload.away?.missingPlayers ?? [])
   ];
-  const homeTeamId =
-    payload.home?.players?.find((item) => item.teamId !== undefined)?.teamId;
-  const awayTeamId =
-    payload.away?.players?.find((item) => item.teamId !== undefined)?.teamId;
+  const homeTeamId = resolveCanonicalTeamId(
+    payload.home?.players ?? [],
+    payload.home?.missingPlayers ?? []
+  );
+  const awayTeamId = resolveCanonicalTeamId(
+    payload.away?.players ?? [],
+    payload.away?.missingPlayers ?? []
+  );
 
   const countries = dedupeCountries(
     lineupPlayers
@@ -277,6 +288,34 @@ export const fetchEventLineupsByEventId = async (
     homeFormation,
     awayFormation
   };
+};
+
+export const fetchEventIncidentsByEventId = async (
+  eventId: string
+): Promise<EventIncidentsMetadata> => {
+  const [incidentsResponse, shotmapResponse] = await Promise.all([
+    fetch(`https://www.sofascore.com/api/v1/event/${eventId}/incidents`),
+    fetch(`https://www.sofascore.com/api/v1/event/${eventId}/shotmap`)
+  ]);
+
+  if (!incidentsResponse.ok) {
+    throw new Error(
+      `Falha ao buscar incidents do evento ${eventId}: ${incidentsResponse.status} ${incidentsResponse.statusText}`
+    );
+  }
+
+  const incidentsPayload = (await incidentsResponse.json()) as SofascoreIncidentsResponse;
+  const shotmapPayload = shotmapResponse.ok
+    ? ((await shotmapResponse.json()) as SofascoreShotmapResponse)
+    : null;
+  const shotmap = shotmapPayload?.shotmap ?? [];
+  const events = dedupeEvents(
+    (incidentsPayload.incidents ?? [])
+      .map((incident, index) => createEventRecord(eventId, incident, index, shotmap))
+      .filter((event): event is EventRecord => event !== null)
+  );
+
+  return { events };
 };
 
 const createCountryRecord = (country: {
@@ -415,7 +454,6 @@ const createLineupRecord = (
   eventId: string,
   lineupPlayer: {
     player?: { id?: number };
-    teamId?: number;
     shirtNumber?: number;
     jerseyNumber?: string;
     position?: string;
@@ -425,20 +463,20 @@ const createLineupRecord = (
     externalType?: number;
     statistics?: { minutesPlayed?: number; rating?: number };
   },
-  fallbackTeamId?: number,
+  canonicalTeamId?: number,
   fallbackEntryType?: string,
   slotMap?: Map<number, number>
 ): LineupRecord | null => {
   const playerId = lineupPlayer.player?.id;
 
-  if (!playerId) {
+  if (!playerId || !canonicalTeamId) {
     return null;
   }
 
   return {
     id: "",
     match: eventId,
-    team: String(lineupPlayer.teamId ?? fallbackTeamId ?? ""),
+    team: String(canonicalTeamId),
     player: String(playerId),
     jersey_number:
       lineupPlayer.jerseyNumber?.trim() ||
@@ -456,7 +494,7 @@ const createLineupRecord = (
       lineupPlayer.statistics?.rating !== undefined
         ? String(lineupPlayer.statistics.rating)
         : "",
-    source_id: `${eventId}:${lineupPlayer.teamId ?? fallbackTeamId ?? ""}:${playerId}`,
+    source_id: `${eventId}:${canonicalTeamId}:${playerId}`,
     source: SOURCE,
     edited: false
   };
@@ -465,10 +503,10 @@ const createLineupRecord = (
 const createPlayerMatchStatRecord = (
   eventId: string,
   lineupPlayer: SofascoreLineupPlayer,
-  fallbackTeamId?: number
+  canonicalTeamId?: number
 ): PlayerMatchStatRecord | null => {
   const playerId = lineupPlayer.player?.id;
-  const teamId = lineupPlayer.teamId ?? fallbackTeamId;
+  const teamId = canonicalTeamId;
   const statistics = lineupPlayer.statistics;
 
   if (!playerId || !teamId || !statistics || Object.keys(statistics).length === 0) {
@@ -741,6 +779,333 @@ const dedupePlayerMatchStats = (
   });
 };
 
+const dedupeEvents = (events: Array<EventRecord | null>): EventRecord[] => {
+  const seen = new Set<string>();
+
+  return events.filter((event): event is EventRecord => {
+    if (!event) {
+      return false;
+    }
+
+    if (seen.has(event.source_id)) {
+      return false;
+    }
+
+    seen.add(event.source_id);
+    return true;
+  });
+};
+
+const createEventRecord = (
+  eventId: string,
+  incident: SofascoreIncident,
+  index: number,
+  shotmap: SofascoreShotmapItem[]
+): EventRecord | null => {
+  const incidentType = incident.incidentType?.trim() ?? "";
+  const sourceId = buildIncidentSourceId(eventId, incident, index);
+
+  if (!incidentType) {
+    return null;
+  }
+
+  const isHome = incident.isHome;
+  const relatedPlayerId =
+    incident.assist1?.id !== undefined
+      ? String(incident.assist1.id)
+      : incident.playerOut?.id !== undefined
+        ? String(incident.playerOut.id)
+        : "";
+  const playerId =
+    incident.playerIn?.id !== undefined
+      ? String(incident.playerIn.id)
+      : incident.player?.id !== undefined
+        ? String(incident.player.id)
+        : "";
+  const managerId = incident.manager?.id !== undefined ? String(incident.manager.id) : "";
+  const shot = findMatchingShot(incident, shotmap);
+  const passingContext = extractPassingContext(incident);
+
+  return {
+    id: "",
+    match: eventId,
+    sort_order: String(index + 1),
+    team: isHome === true ? "home" : isHome === false ? "away" : "",
+    player: playerId,
+    related_player: relatedPlayerId,
+    manager: managerId,
+    incident_type: incidentType,
+    incident_class: incident.incidentClass?.trim() ?? "",
+    period: incident.text?.trim() ?? "",
+    minute: stringifyOptionalNumber(incident.time),
+    added_time: stringifyOptionalNumber(incident.addedTime),
+    reversed_period_time: stringifyOptionalNumber(incident.reversedPeriodTime),
+    is_home: isHome !== undefined ? String(isHome) : "",
+    impact_side: resolveImpactSide(incident),
+    is_confirmed:
+      incident.confirmed !== undefined ? String(incident.confirmed) : "",
+    is_rescinded:
+      incident.rescinded !== undefined ? String(incident.rescinded) : "",
+    reason: incident.reason?.trim() ?? "",
+    description: incident.description?.trim() ?? "",
+    is_injury: incident.injury !== undefined ? String(incident.injury) : "",
+    home_score: stringifyOptionalNumber(incident.homeScore),
+    away_score: stringifyOptionalNumber(incident.awayScore),
+    length: stringifyOptionalNumber(incident.length),
+    body_part: shot?.bodyPart?.trim() ?? passingContext.body_part,
+    goal_type: resolveGoalType(incident, shot, passingContext.goal_type),
+    situation: shot?.situation?.trim() ?? "",
+    shot_type: shot?.shotType?.trim() ?? "",
+    player_x: stringifyOptionalNumber(shot?.playerCoordinates?.x ?? passingContext.player_x),
+    player_y: stringifyOptionalNumber(shot?.playerCoordinates?.y ?? passingContext.player_y),
+    pass_end_x: stringifyOptionalNumber(passingContext.pass_end_x),
+    pass_end_y: stringifyOptionalNumber(passingContext.pass_end_y),
+    shot_x: stringifyOptionalNumber(passingContext.shot_x),
+    shot_y: stringifyOptionalNumber(passingContext.shot_y),
+    goal_mouth_x: stringifyOptionalNumber(
+      shot?.goalMouthCoordinates?.x ?? passingContext.goal_mouth_x
+    ),
+    goal_mouth_y: stringifyOptionalNumber(
+      shot?.goalMouthCoordinates?.y ?? passingContext.goal_mouth_y
+    ),
+    goalkeeper_x: stringifyOptionalNumber(passingContext.goalkeeper_x),
+    goalkeeper_y: stringifyOptionalNumber(passingContext.goalkeeper_y),
+    source_id: sourceId,
+    source: SOURCE,
+    edited: false
+  };
+};
+
+const buildIncidentSourceId = (
+  eventId: string,
+  incident: SofascoreIncident,
+  index: number
+): string => {
+  if (incident.id !== undefined) {
+    return String(incident.id);
+  }
+
+  const parts = [
+    eventId,
+    incident.incidentType?.trim() ?? "unknown",
+    incident.incidentClass?.trim() ?? "",
+    incident.text?.trim() ?? "",
+    stringifyOptionalNumber(incident.time),
+    stringifyOptionalNumber(incident.addedTime),
+    stringifyOptionalNumber(incident.reversedPeriodTime),
+    incident.isHome !== undefined ? String(incident.isHome) : "",
+    incident.player?.id !== undefined
+      ? String(incident.player.id)
+      : incident.playerIn?.id !== undefined
+        ? String(incident.playerIn.id)
+        : "",
+    incident.playerOut?.id !== undefined ? String(incident.playerOut.id) : "",
+    incident.manager?.id !== undefined ? String(incident.manager.id) : "",
+    String(index + 1)
+  ];
+
+  return parts.join(":");
+};
+
+const findMatchingShot = (
+  incident: SofascoreIncident,
+  shotmap: SofascoreShotmapItem[]
+): SofascoreShotmapItem | null => {
+  const playerId =
+    incident.player?.id ?? incident.playerIn?.id;
+  const incidentTime = incident.time;
+  const incidentAddedTime = incident.addedTime;
+
+  if (!playerId || incidentTime === undefined) {
+    return null;
+  }
+
+  const expectedShotTypes =
+    incident.incidentType === "goal"
+      ? ["goal"]
+      : incident.incidentType === "inGamePenalty"
+        ? ["goal", "miss", "save", "post", "block"]
+        : [];
+
+  const candidates = shotmap.filter((item) => {
+    if (item.player?.id !== playerId) {
+      return false;
+    }
+
+    if (item.isHome !== incident.isHome) {
+      return false;
+    }
+
+    if (item.time !== incidentTime) {
+      return false;
+    }
+
+    if (expectedShotTypes.length > 0 && !expectedShotTypes.includes(item.shotType ?? "")) {
+      return false;
+    }
+
+    if (incidentAddedTime !== undefined && item.addedTime !== undefined) {
+      return item.addedTime === incidentAddedTime;
+    }
+
+    return true;
+  });
+
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  return (
+    candidates.find((item) => item.addedTime === incidentAddedTime) ??
+    candidates[0] ??
+    null
+  );
+};
+
+const extractPassingContext = (
+  incident: SofascoreIncident
+): {
+  body_part: string;
+  goal_type: string;
+  player_x?: number;
+  player_y?: number;
+  pass_end_x?: number;
+  pass_end_y?: number;
+  shot_x?: number;
+  shot_y?: number;
+  goal_mouth_x?: number;
+  goal_mouth_y?: number;
+  goalkeeper_x?: number;
+  goalkeeper_y?: number;
+} => {
+  const actions = incident.footballPassingNetworkAction ?? [];
+  const assistAction = actions.find((action) => action.isAssist && action.passEndCoordinates);
+  const fallbackPassAction = [...actions]
+    .reverse()
+    .find((action) => action.passEndCoordinates);
+  const finalAction = selectFinalAction(actions, incident.incidentType);
+
+  return {
+    body_part: finalAction?.bodyPart?.trim() ?? "",
+    goal_type: finalAction?.goalType?.trim() ?? "",
+    player_x: finalAction?.playerCoordinates?.x,
+    player_y: finalAction?.playerCoordinates?.y,
+    pass_end_x: assistAction?.passEndCoordinates?.x ?? fallbackPassAction?.passEndCoordinates?.x,
+    pass_end_y: assistAction?.passEndCoordinates?.y ?? fallbackPassAction?.passEndCoordinates?.y,
+    shot_x: finalAction?.goalShotCoordinates?.x,
+    shot_y: finalAction?.goalShotCoordinates?.y,
+    goal_mouth_x: finalAction?.goalMouthCoordinates?.x,
+    goal_mouth_y: finalAction?.goalMouthCoordinates?.y,
+    goalkeeper_x: finalAction?.gkCoordinates?.x,
+    goalkeeper_y: finalAction?.gkCoordinates?.y
+  };
+};
+
+const selectFinalAction = (
+  actions: SofascoreFootballPassingAction[],
+  incidentType: string | undefined
+): SofascoreFootballPassingAction | null => {
+  const prioritizedEventTypes =
+    incidentType === "goal"
+      ? ["goal"]
+      : incidentType === "inGamePenalty"
+        ? ["penalty-miss", "goal", "miss", "save", "block", "post"]
+        : [];
+
+  for (const eventType of prioritizedEventTypes) {
+    const matchingAction = actions.find((action) => action.eventType === eventType);
+
+    if (matchingAction) {
+      return matchingAction;
+    }
+  }
+
+  return (
+    [...actions]
+      .reverse()
+      .find(
+        (action) =>
+          action.goalShotCoordinates ||
+          action.goalMouthCoordinates ||
+          action.gkCoordinates ||
+          action.playerCoordinates
+      ) ?? null
+  );
+};
+
+const resolveGoalType = (
+  incident: SofascoreIncident,
+  shot: SofascoreShotmapItem | null,
+  passingGoalType: string
+): string => {
+  if (shot?.situation?.trim() === "free-kick") {
+    return "free-kick";
+  }
+
+  if (shot?.goalType?.trim()) {
+    return shot.goalType.trim();
+  }
+
+  if (passingGoalType) {
+    return passingGoalType;
+  }
+
+  if (incident.incidentClass === "ownGoal") {
+    return "own";
+  }
+
+  if (incident.incidentClass === "penalty" || incident.incidentType === "inGamePenalty") {
+    return "penalty";
+  }
+
+  if (incident.incidentType === "goal") {
+    return "regular";
+  }
+
+  return "";
+};
+
+const resolveImpactSide = (incident: SofascoreIncident): string => {
+  const side = incident.isHome === true ? "home" : incident.isHome === false ? "away" : "";
+  const oppositeSide = side === "home" ? "away" : side === "away" ? "home" : "";
+
+  switch (incident.incidentType) {
+    case "goal":
+      if (incident.incidentClass === "ownGoal") {
+        return oppositeSide || "neutral";
+      }
+
+      return side || "neutral";
+    case "inGamePenalty":
+      return incident.incidentClass === "missed" ? oppositeSide || "neutral" : side || "neutral";
+    case "card":
+      return oppositeSide || "neutral";
+    case "substitution":
+    case "period":
+    case "injuryTime":
+      return "neutral";
+    case "varDecision":
+      if (
+        incident.incidentClass === "goalAwarded" ||
+        incident.incidentClass === "penaltyAwarded"
+      ) {
+        return side || "neutral";
+      }
+
+      if (
+        incident.incidentClass === "penaltyNotAwarded" ||
+        incident.incidentClass === "cardUpgrade" ||
+        incident.incidentClass === "redCardGiven"
+      ) {
+        return oppositeSide || "neutral";
+      }
+
+      return "neutral";
+    default:
+      return "neutral";
+  }
+};
+
 const createAveragePositionMap = (
   items: Array<{
     player?: { id?: number };
@@ -764,6 +1129,33 @@ const createAveragePositionMap = (
   }
 
   return positions;
+};
+
+const resolveCanonicalTeamId = (
+  players: SofascoreLineupPlayer[],
+  missingPlayers: SofascoreLineupPlayer[]
+): number | undefined => {
+  const counts = new Map<number, number>();
+
+  for (const item of [...players, ...missingPlayers]) {
+    if (item.teamId === undefined) {
+      continue;
+    }
+
+    counts.set(item.teamId, (counts.get(item.teamId) ?? 0) + 1);
+  }
+
+  let canonicalTeamId: number | undefined;
+  let highestCount = -1;
+
+  for (const [teamId, count] of counts.entries()) {
+    if (count > highestCount) {
+      canonicalTeamId = teamId;
+      highestCount = count;
+    }
+  }
+
+  return canonicalTeamId;
 };
 
 const createStarterSlotMap = (
