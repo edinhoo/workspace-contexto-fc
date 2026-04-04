@@ -2,7 +2,7 @@ import { mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { fetchEventMetadataByEventId } from "./sofascore-client.js";
+import { fetchEventLineupsByEventId, fetchEventMetadataByEventId } from "./sofascore-client.js";
 import { loadCountries, saveCountries, upsertCountries } from "./storage/countries-csv.js";
 import { loadCities, relinkCityCountries, saveCities, upsertCities } from "./storage/cities-csv.js";
 import {
@@ -11,6 +11,12 @@ import {
   saveStadiums,
   upsertStadiums
 } from "./storage/stadiums-csv.js";
+import {
+  loadTeams,
+  relinkTeamStadiums,
+  saveTeams,
+  upsertTeams
+} from "./storage/teams-csv.js";
 import {
   loadTournaments,
   relinkTournamentCountries,
@@ -23,6 +29,12 @@ import {
   saveManagers,
   upsertManagers
 } from "./storage/managers-csv.js";
+import {
+  loadPlayers,
+  relinkPlayerCountries,
+  savePlayers,
+  upsertPlayers
+} from "./storage/players-csv.js";
 import {
   loadReferees,
   relinkRefereeCountries,
@@ -39,9 +51,11 @@ import type {
   CityRecord,
   CountryRecord,
   ManagerRecord,
+  PlayerRecord,
   RefereeRecord,
   SeasonRecord,
   StadiumRecord,
+  TeamRecord,
   TournamentRecord
 } from "./types.js";
 
@@ -51,6 +65,8 @@ const citiesCsvPath = resolve(currentDir, "../data/cities.csv");
 const stadiumsCsvPath = resolve(currentDir, "../data/stadiums.csv");
 const managersCsvPath = resolve(currentDir, "../data/managers.csv");
 const refereesCsvPath = resolve(currentDir, "../data/referees.csv");
+const playersCsvPath = resolve(currentDir, "../data/players.csv");
+const teamsCsvPath = resolve(currentDir, "../data/teams.csv");
 const tournamentsCsvPath = resolve(currentDir, "../data/tournaments.csv");
 const seasonsCsvPath = resolve(currentDir, "../data/seasons.csv");
 
@@ -68,13 +84,31 @@ const run = async (): Promise<void> => {
   const existingCities = await loadCities(citiesCsvPath);
   const existingStadiums = await loadStadiums(stadiumsCsvPath);
   const existingManagers = await loadManagers(managersCsvPath);
+  const existingPlayers = await loadPlayers(playersCsvPath);
   const existingReferees = await loadReferees(refereesCsvPath);
+  const existingTeams = await loadTeams(teamsCsvPath);
   const existingTournaments = await loadTournaments(tournamentsCsvPath);
   const existingSeasons = await loadSeasons(seasonsCsvPath);
-  const fetchedCountries = await Promise.all(
+  const fetchedData = await Promise.all(
     eventIds.map(async (eventId) => {
       try {
-        return await fetchEventMetadataByEventId(eventId);
+        const [eventMetadata, lineupMetadata] = await Promise.all([
+          fetchEventMetadataByEventId(eventId),
+          fetchEventLineupsByEventId(eventId).catch((error) => {
+            const message = error instanceof Error ? error.message : "Erro desconhecido";
+            console.error(`Falha ao processar as lineups do evento ${eventId}: ${message}`);
+
+            return {
+              countries: [],
+              players: []
+            };
+          })
+        ]);
+
+        return {
+          eventMetadata,
+          lineupMetadata
+        };
       } catch (error) {
         const message = error instanceof Error ? error.message : "Erro desconhecido";
         console.error(`Falha ao processar o evento ${eventId}: ${message}`);
@@ -83,25 +117,30 @@ const run = async (): Promise<void> => {
     })
   );
 
-  const validCountries = fetchedCountries
-    .flatMap((eventMetadata) => eventMetadata?.countries ?? [])
+  const validCountries = fetchedData
+    .flatMap((entry) => [
+      ...(entry?.eventMetadata.countries ?? []),
+      ...(entry?.lineupMetadata.countries ?? [])
+    ])
     .filter((country): country is CountryRecord => country !== null);
-  const validTournaments = fetchedCountries
-    .map((eventMetadata) => eventMetadata?.tournament ?? null)
+  const validTournaments = fetchedData
+    .map((entry) => entry?.eventMetadata.tournament ?? null)
     .filter((tournament): tournament is TournamentRecord => tournament !== null);
-  const validCities = fetchedCountries
-    .map((eventMetadata) => eventMetadata?.city ?? null)
+  const validCities = fetchedData
+    .flatMap((entry) => entry?.eventMetadata.cities ?? [])
     .filter((city): city is CityRecord => city !== null);
-  const validSeasons = fetchedCountries
-    .map((eventMetadata) => eventMetadata?.season ?? null)
+  const validSeasons = fetchedData
+    .map((entry) => entry?.eventMetadata.season ?? null)
     .filter((season): season is SeasonRecord => season !== null);
-  const validStadiums = fetchedCountries
-    .map((eventMetadata) => eventMetadata?.stadium ?? null)
+  const validStadiums = fetchedData
+    .flatMap((entry) => entry?.eventMetadata.stadiums ?? [])
     .filter((stadium): stadium is StadiumRecord => stadium !== null);
-  const validReferees = fetchedCountries
-    .map((eventMetadata) => eventMetadata?.referee ?? null)
+  const validReferees = fetchedData
+    .map((entry) => entry?.eventMetadata.referee ?? null)
     .filter((referee): referee is RefereeRecord => referee !== null);
-  const validManagers = fetchedCountries.flatMap((eventMetadata) => eventMetadata?.managers ?? []);
+  const validManagers = fetchedData.flatMap((entry) => entry?.eventMetadata.managers ?? []);
+  const validPlayers = fetchedData.flatMap((entry) => entry?.lineupMetadata.players ?? []);
+  const validTeams = fetchedData.flatMap((entry) => entry?.eventMetadata.teams ?? []);
 
   const mergedCountries = upsertCountries(existingCountries, validCountries);
   const mergedCities = upsertCities(
@@ -114,11 +153,21 @@ const run = async (): Promise<void> => {
     validStadiums.map((stadium) => linkStadiumReferences(stadium, normalizedCities))
   );
   const normalizedStadiums = relinkStadiumReferences(mergedStadiums, normalizedCities);
+  const mergedTeams = upsertTeams(
+    existingTeams,
+    validTeams.map((team) => linkTeamStadium(team, normalizedStadiums))
+  );
+  const normalizedTeams = relinkTeamStadiums(mergedTeams, normalizedStadiums);
   const mergedManagers = upsertManagers(
     existingManagers,
     validManagers.map((manager) => linkManagerCountry(manager, mergedCountries))
   );
   const normalizedManagers = relinkManagerCountries(mergedManagers, mergedCountries);
+  const mergedPlayers = upsertPlayers(
+    existingPlayers,
+    validPlayers.map((player) => linkPlayerCountry(player, mergedCountries))
+  );
+  const normalizedPlayers = relinkPlayerCountries(mergedPlayers, mergedCountries);
   const mergedReferees = upsertReferees(
     existingReferees,
     validReferees.map((referee) => linkRefereeCountry(referee, mergedCountries))
@@ -138,7 +187,9 @@ const run = async (): Promise<void> => {
   await saveCountries(countriesCsvPath, mergedCountries);
   await saveCities(citiesCsvPath, normalizedCities);
   await saveStadiums(stadiumsCsvPath, normalizedStadiums);
+  await saveTeams(teamsCsvPath, normalizedTeams);
   await saveManagers(managersCsvPath, normalizedManagers);
+  await savePlayers(playersCsvPath, normalizedPlayers);
   await saveReferees(refereesCsvPath, normalizedReferees);
   await saveTournaments(tournamentsCsvPath, normalizedTournaments);
   await saveSeasons(seasonsCsvPath, normalizedSeasons);
@@ -148,7 +199,9 @@ const run = async (): Promise<void> => {
   );
   console.log(`cities.csv atualizado com ${validCities.length} item(ns) processado(s).`);
   console.log(`stadiums.csv atualizado com ${validStadiums.length} item(ns) processado(s).`);
+  console.log(`teams.csv atualizado com ${validTeams.length} item(ns) processado(s).`);
   console.log(`managers.csv atualizado com ${validManagers.length} item(ns) processado(s).`);
+  console.log(`players.csv atualizado com ${validPlayers.length} item(ns) processado(s).`);
   console.log(`referees.csv atualizado com ${validReferees.length} item(ns) processado(s).`);
   console.log(
     `tournaments.csv atualizado com ${validTournaments.length} item(ns) processado(s).`
@@ -255,6 +308,36 @@ const linkManagerCountry = (
   return {
     ...manager,
     country: linkedCountry.id
+  };
+};
+
+const linkPlayerCountry = (player: PlayerRecord, countries: CountryRecord[]): PlayerRecord => {
+  const linkedCountry = countries.find(
+    (country) => country.source_slug === player.country || country.slug === player.country
+  );
+
+  if (!linkedCountry) {
+    return player;
+  }
+
+  return {
+    ...player,
+    country: linkedCountry.id
+  };
+};
+
+const linkTeamStadium = (team: TeamRecord, stadiums: StadiumRecord[]): TeamRecord => {
+  const linkedStadium = stadiums.find(
+    (stadium) => stadium.source_id === team.stadium || stadium.id === team.stadium
+  );
+
+  if (!linkedStadium) {
+    return team;
+  }
+
+  return {
+    ...team,
+    stadium: linkedStadium.id
   };
 };
 

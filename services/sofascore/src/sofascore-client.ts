@@ -1,12 +1,16 @@
 import type {
   CityRecord,
   CountryRecord,
+  EventLineupsMetadata,
   EventMetadata,
   ManagerRecord,
+  PlayerRecord,
   RefereeRecord,
   SeasonRecord,
-  StadiumRecord,
   SofascoreEventResponse,
+  SofascoreLineupsResponse,
+  StadiumRecord,
+  TeamRecord,
   TournamentRecord
 } from "./types.js";
 
@@ -22,53 +26,35 @@ export const fetchEventMetadataByEventId = async (
   }
 
   const payload = (await response.json()) as SofascoreEventResponse;
-  const tournament = payload.event?.tournament;
-  const season = payload.event?.season;
-  const venue = payload.event?.venue;
-  const referee = payload.event?.referee;
-  const homeManager = payload.event?.homeTeam?.manager;
-  const awayManager = payload.event?.awayTeam?.manager;
+  const event = payload.event;
+  const tournament = event?.tournament;
+  const season = event?.season;
+  const eventVenue = event?.venue;
+  const referee = event?.referee;
+  const homeTeam = event?.homeTeam;
+  const awayTeam = event?.awayTeam;
   const country = tournament?.category?.country;
   const uniqueTournament = tournament?.uniqueTournament;
-  const venueCountry = venue?.country;
-  const city = venue?.city;
-  const stadium = venue?.stadium;
-  const venueCoordinates = venue?.venueCoordinates;
 
-  const countryRecord = country
-    ? ({
-        id: "",
-        slug: country.slug,
-        name: country.name,
-        code2: country.alpha2 ?? "",
-        code3: country.alpha3 ?? "",
-        source_slug: country.slug,
-        source_code2: country.alpha2 ?? "",
-        source_code3: country.alpha3 ?? "",
-        source_name: country.name,
-        source: SOURCE,
-        sourcetranslated: false
-      } satisfies CountryRecord)
-    : null;
+  const countries: CountryRecord[] = [];
 
-  const managerCountryRecords = [homeManager?.country, awayManager?.country]
-    .filter((managerCountry): managerCountry is NonNullable<typeof managerCountry> => Boolean(managerCountry))
-    .map(
-      (managerCountry) =>
-        ({
-          id: "",
-          slug: managerCountry.slug,
-          name: managerCountry.name,
-          code2: managerCountry.alpha2 ?? "",
-          code3: managerCountry.alpha3 ?? "",
-          source_slug: managerCountry.slug,
-          source_code2: managerCountry.alpha2 ?? "",
-          source_code3: managerCountry.alpha3 ?? "",
-          source_name: managerCountry.name,
-          source: SOURCE,
-          sourcetranslated: false
-        }) satisfies CountryRecord
-    );
+  if (country) {
+    countries.push(createCountryRecord(country));
+  }
+
+  if (eventVenue?.country) {
+    countries.push(createCountryRecord(eventVenue.country));
+  }
+
+  if (referee?.country) {
+    countries.push(createCountryRecord(referee.country));
+  }
+
+  const teamCountries = [homeTeam?.country, awayTeam?.country, homeTeam?.venue?.country, awayTeam?.venue?.country]
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+    .map((item) => createCountryRecord(item));
+
+  countries.push(...teamCountries);
 
   const tournamentRecord: TournamentRecord | null =
     tournament && uniqueTournament && country
@@ -107,38 +93,17 @@ export const fetchEventMetadataByEventId = async (
         }
       : null;
 
-  const cityRecord: CityRecord | null =
-    city && venueCountry
-      ? {
-          id: "",
-          slug: "",
-          name: city.name,
-          short_name: city.name,
-          country: venueCountry.slug,
-          source_name: city.name,
-          source: SOURCE,
-          edited: false
-        }
-      : null;
+  const cities = dedupeCities([
+    createCityRecord(eventVenue?.city?.name, eventVenue?.country?.slug),
+    createCityRecord(homeTeam?.venue?.city?.name, homeTeam?.venue?.country?.slug),
+    createCityRecord(awayTeam?.venue?.city?.name, awayTeam?.venue?.country?.slug)
+  ]);
 
-  const stadiumRecord: StadiumRecord | null =
-    venue && venueCountry && city && venue.id
-      ? {
-          id: "",
-          slug: "",
-          name: stadium?.name || venue.name || "",
-          short_name: stadium?.name || venue.name || "",
-          city: city.name,
-          capacity: String(stadium?.capacity ?? venue.capacity ?? ""),
-          latitude:
-            venueCoordinates?.latitude !== undefined ? String(venueCoordinates.latitude) : "",
-          longitude:
-            venueCoordinates?.longitude !== undefined ? String(venueCoordinates.longitude) : "",
-          source_id: String(venue.id),
-          source: SOURCE,
-          edited: false
-        }
-      : null;
+  const stadiums = dedupeStadiums([
+    createStadiumRecord(eventVenue),
+    createStadiumRecord(homeTeam?.venue),
+    createStadiumRecord(awayTeam?.venue)
+  ]);
 
   const refereeRecord: RefereeRecord | null =
     referee && referee.country
@@ -154,38 +119,201 @@ export const fetchEventMetadataByEventId = async (
         }
       : null;
 
-  const managers: ManagerRecord[] = [homeManager, awayManager]
+  const managers: ManagerRecord[] = [homeTeam?.manager, awayTeam?.manager]
     .filter((manager): manager is NonNullable<typeof manager> => Boolean(manager?.country))
-    .map(
-      (manager) =>
-        ({
-          id: "",
-          slug: manager.slug,
-          name: manager.name,
-          short_name: manager.shortName ?? manager.name,
-          country: manager.country?.slug ?? "",
-          source_id: String(manager.id),
-          source: SOURCE,
-          edited: false
-        }) satisfies ManagerRecord
-    );
+    .map((manager) => ({
+      id: "",
+      slug: manager.slug,
+      name: manager.name,
+      short_name: manager.shortName ?? manager.name,
+      country: manager.country?.slug ?? "",
+      source_id: String(manager.id),
+      source: SOURCE,
+      edited: false
+    }));
 
-  const allCountryRecords: CountryRecord[] = [];
-
-  if (countryRecord) {
-    allCountryRecords.push(countryRecord);
-  }
-
-  allCountryRecords.push(...managerCountryRecords);
+  const teams = [homeTeam, awayTeam]
+    .filter((team): team is NonNullable<typeof team> => Boolean(team?.id))
+    .map((team) => createTeamRecord(team));
 
   return {
-    countries: dedupeCountries(allCountryRecords),
+    countries: dedupeCountries(countries),
     tournament: tournamentRecord,
     season: seasonRecord,
-    city: cityRecord,
-    stadium: stadiumRecord,
+    cities,
+    stadiums,
     referee: refereeRecord,
-    managers
+    managers,
+    teams
+  };
+};
+
+export const fetchEventLineupsByEventId = async (
+  eventId: string
+): Promise<EventLineupsMetadata> => {
+  const response = await fetch(`https://www.sofascore.com/api/v1/event/${eventId}/lineups`);
+
+  if (!response.ok) {
+    throw new Error(
+      `Falha ao buscar lineups do evento ${eventId}: ${response.status} ${response.statusText}`
+    );
+  }
+
+  const payload = (await response.json()) as SofascoreLineupsResponse;
+  const lineupPlayers = [
+    ...(payload.home?.players ?? []),
+    ...(payload.home?.missingPlayers ?? []),
+    ...(payload.away?.players ?? []),
+    ...(payload.away?.missingPlayers ?? [])
+  ];
+
+  const countries = dedupeCountries(
+    lineupPlayers
+      .map((lineupPlayer) => lineupPlayer.player?.country)
+      .filter((country): country is NonNullable<typeof country> => Boolean(country))
+      .map((country) => createCountryRecord(country))
+  );
+
+  const players = dedupePlayers(
+    lineupPlayers
+      .map((lineupPlayer) => createPlayerRecord(lineupPlayer.player))
+      .filter((player): player is PlayerRecord => player !== null)
+  );
+
+  return {
+    countries,
+    players
+  };
+};
+
+const createCountryRecord = (country: {
+  alpha2?: string;
+  alpha3?: string;
+  name: string;
+  slug: string;
+}): CountryRecord => ({
+  id: "",
+  slug: country.slug,
+  name: country.name,
+  code2: country.alpha2 ?? "",
+  code3: country.alpha3 ?? "",
+  source_slug: country.slug,
+  source_code2: country.alpha2 ?? "",
+  source_code3: country.alpha3 ?? "",
+  source_name: country.name,
+  source: SOURCE,
+  sourcetranslated: false
+});
+
+const createCityRecord = (
+  cityName?: string,
+  countrySlug?: string
+): CityRecord | null =>
+  cityName && countrySlug
+    ? {
+        id: "",
+        slug: "",
+        name: cityName,
+        short_name: cityName,
+        country: countrySlug,
+        source_name: cityName,
+        source: SOURCE,
+        edited: false
+      }
+    : null;
+
+const createStadiumRecord = (
+  venue?:
+    | {
+        id?: number;
+        name?: string;
+        capacity?: number;
+        venueCoordinates?: { latitude?: number; longitude?: number };
+        city?: { name: string };
+        stadium?: { name?: string; capacity?: number };
+      }
+    | null
+): StadiumRecord | null =>
+  venue && venue.city && venue.id
+    ? {
+        id: "",
+        slug: "",
+        name: venue.stadium?.name || venue.name || "",
+        short_name: venue.stadium?.name || venue.name || "",
+        city: venue.city.name,
+        capacity: String(venue.stadium?.capacity ?? venue.capacity ?? ""),
+        latitude:
+          venue.venueCoordinates?.latitude !== undefined
+            ? String(venue.venueCoordinates.latitude)
+            : "",
+        longitude:
+          venue.venueCoordinates?.longitude !== undefined
+            ? String(venue.venueCoordinates.longitude)
+            : "",
+        source_id: String(venue.id),
+        source: SOURCE,
+        edited: false
+      }
+    : null;
+
+const createTeamRecord = (team: {
+  id: number;
+  name: string;
+  slug: string;
+  shortName?: string;
+  nameCode?: string;
+  fullName?: string;
+  foundationDateTimestamp?: number;
+  teamColors?: { primary?: string; secondary?: string; text?: string };
+  venue?: { id?: number };
+}): TeamRecord => ({
+  id: "",
+  slug: team.slug,
+  name: team.name,
+  code3: team.nameCode ?? "",
+  short_name: team.shortName ?? team.name,
+  complete_name: team.fullName ?? team.name,
+  stadium: team.venue?.id ? String(team.venue.id) : "",
+  foundation: toFoundationDate(team.foundationDateTimestamp),
+  primary_color: team.teamColors?.primary ?? "",
+  secondary_color: team.teamColors?.secondary ?? "",
+  text_color: team.teamColors?.text ?? "",
+  edited: false
+});
+
+const createPlayerRecord = (player?: {
+  id?: number;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  slug?: string;
+  shortName?: string;
+  position?: string;
+  height?: number;
+  country?: { slug: string };
+  dateOfBirthTimestamp?: number;
+}): PlayerRecord | null => {
+  const name = player?.name?.trim() || player?.shortName?.trim() || "";
+  const shortName = player?.shortName?.trim() || name;
+
+  if (!player?.id || !name) {
+    return null;
+  }
+
+  return {
+    id: "",
+    slug: player.slug ?? "",
+    name,
+    short_name: shortName,
+    first_name: player.firstName?.trim() ?? "",
+    last_name: player.lastName?.trim() ?? "",
+    position: player.position?.trim() ?? "",
+    height: player.height !== undefined ? String(player.height) : "",
+    country: player.country?.slug ?? "",
+    date_of_birth: toDateString(player.dateOfBirthTimestamp),
+    source: SOURCE,
+    source_id: String(player.id),
+    edited: false
   };
 };
 
@@ -202,4 +330,65 @@ const dedupeCountries = (countries: CountryRecord[]): CountryRecord[] => {
     seen.add(key);
     return true;
   });
+};
+
+const dedupeCities = (cities: Array<CityRecord | null>): CityRecord[] => {
+  const seen = new Set<string>();
+
+  return cities.filter((city): city is CityRecord => {
+    if (!city) {
+      return false;
+    }
+
+    const key = `${city.source_name}:${city.country}`;
+
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+};
+
+const dedupeStadiums = (stadiums: Array<StadiumRecord | null>): StadiumRecord[] => {
+  const seen = new Set<string>();
+
+  return stadiums.filter((stadium): stadium is StadiumRecord => {
+    if (!stadium) {
+      return false;
+    }
+
+    if (seen.has(stadium.source_id)) {
+      return false;
+    }
+
+    seen.add(stadium.source_id);
+    return true;
+  });
+};
+
+const dedupePlayers = (players: PlayerRecord[]): PlayerRecord[] => {
+  const seen = new Set<string>();
+
+  return players.filter((player) => {
+    if (seen.has(player.source_id)) {
+      return false;
+    }
+
+    seen.add(player.source_id);
+    return true;
+  });
+};
+
+const toFoundationDate = (timestamp?: number): string => {
+  return toDateString(timestamp);
+};
+
+const toDateString = (timestamp?: number): string => {
+  if (timestamp === undefined) {
+    return "";
+  }
+
+  return new Date(timestamp * 1000).toISOString().slice(0, 10);
 };
