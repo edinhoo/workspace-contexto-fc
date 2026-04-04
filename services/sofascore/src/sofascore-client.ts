@@ -1,8 +1,10 @@
 import type {
   CityRecord,
   CountryRecord,
+  SofascoreAveragePositionsResponse,
   EventLineupsMetadata,
   EventMetadata,
+  LineupRecord,
   ManagerRecord,
   MatchRecord,
   PlayerRecord,
@@ -177,21 +179,31 @@ export const fetchEventMetadataByEventId = async (
 export const fetchEventLineupsByEventId = async (
   eventId: string
 ): Promise<EventLineupsMetadata> => {
-  const response = await fetch(`https://www.sofascore.com/api/v1/event/${eventId}/lineups`);
+  const [lineupsResponse, averagePositionsResponse] = await Promise.all([
+    fetch(`https://www.sofascore.com/api/v1/event/${eventId}/lineups`),
+    fetch(`https://www.sofascore.com/api/v1/event/${eventId}/average-positions`)
+  ]);
 
-  if (!response.ok) {
+  if (!lineupsResponse.ok) {
     throw new Error(
-      `Falha ao buscar lineups do evento ${eventId}: ${response.status} ${response.statusText}`
+      `Falha ao buscar lineups do evento ${eventId}: ${lineupsResponse.status} ${lineupsResponse.statusText}`
     );
   }
 
-  const payload = (await response.json()) as SofascoreLineupsResponse;
+  const payload = (await lineupsResponse.json()) as SofascoreLineupsResponse;
+  const averagePositionsPayload = averagePositionsResponse.ok
+    ? ((await averagePositionsResponse.json()) as SofascoreAveragePositionsResponse)
+    : null;
   const lineupPlayers = [
     ...(payload.home?.players ?? []),
     ...(payload.home?.missingPlayers ?? []),
     ...(payload.away?.players ?? []),
     ...(payload.away?.missingPlayers ?? [])
   ];
+  const homeTeamId =
+    payload.home?.players?.find((item) => item.teamId !== undefined)?.teamId;
+  const awayTeamId =
+    payload.away?.players?.find((item) => item.teamId !== undefined)?.teamId;
 
   const countries = dedupeCountries(
     lineupPlayers
@@ -205,12 +217,42 @@ export const fetchEventLineupsByEventId = async (
       .map((lineupPlayer) => createPlayerRecord(lineupPlayer.player))
       .filter((player): player is PlayerRecord => player !== null)
   );
+  const homeAveragePositions = createAveragePositionMap(averagePositionsPayload?.home ?? []);
+  const awayAveragePositions = createAveragePositionMap(averagePositionsPayload?.away ?? []);
+  const homeFormation = payload.home?.formation?.trim() ?? "";
+  const awayFormation = payload.away?.formation?.trim() ?? "";
+  const homeStarterSlots = createStarterSlotMap(
+    payload.home?.players ?? [],
+    homeFormation,
+    homeAveragePositions
+  );
+  const awayStarterSlots = createStarterSlotMap(
+    payload.away?.players ?? [],
+    awayFormation,
+    awayAveragePositions
+  );
+
+  const lineups = dedupeLineups([
+    ...(payload.home?.players ?? []).map((lineupPlayer) =>
+      createLineupRecord(eventId, lineupPlayer, homeTeamId, "player", homeStarterSlots)
+    ),
+    ...(payload.home?.missingPlayers ?? []).map((lineupPlayer) =>
+      createLineupRecord(eventId, lineupPlayer, homeTeamId, "missing", homeStarterSlots)
+    ),
+    ...(payload.away?.players ?? []).map((lineupPlayer) =>
+      createLineupRecord(eventId, lineupPlayer, awayTeamId, "player", awayStarterSlots)
+    ),
+    ...(payload.away?.missingPlayers ?? []).map((lineupPlayer) =>
+      createLineupRecord(eventId, lineupPlayer, awayTeamId, "missing", awayStarterSlots)
+    )
+  ]);
 
   return {
     countries,
     players,
-    homeFormation: payload.home?.formation?.trim() ?? "",
-    awayFormation: payload.away?.formation?.trim() ?? ""
+    lineups,
+    homeFormation,
+    awayFormation
   };
 };
 
@@ -342,6 +384,57 @@ const createPlayerRecord = (player?: {
     date_of_birth: toDateString(player.dateOfBirthTimestamp),
     source: SOURCE,
     source_id: String(player.id),
+    edited: false
+  };
+};
+
+const createLineupRecord = (
+  eventId: string,
+  lineupPlayer: {
+    player?: { id?: number };
+    teamId?: number;
+    shirtNumber?: number;
+    jerseyNumber?: string;
+    position?: string;
+    substitute?: boolean;
+    type?: string;
+    reason?: number;
+    externalType?: number;
+    statistics?: { minutesPlayed?: number; rating?: number };
+  },
+  fallbackTeamId?: number,
+  fallbackEntryType?: string,
+  slotMap?: Map<number, number>
+): LineupRecord | null => {
+  const playerId = lineupPlayer.player?.id;
+
+  if (!playerId) {
+    return null;
+  }
+
+  return {
+    id: "",
+    match: eventId,
+    team: String(lineupPlayer.teamId ?? fallbackTeamId ?? ""),
+    player: String(playerId),
+    jersey_number:
+      lineupPlayer.jerseyNumber?.trim() ||
+      (lineupPlayer.shirtNumber !== undefined ? String(lineupPlayer.shirtNumber) : ""),
+    position: lineupPlayer.position?.trim() ?? "",
+    substitute:
+      lineupPlayer.substitute !== undefined ? String(lineupPlayer.substitute) : "",
+    is_missing: String((lineupPlayer.type?.trim() ?? fallbackEntryType ?? "") === "missing"),
+    slot: playerId ? String(slotMap?.get(playerId) ?? "") : "",
+    minutes_played:
+      lineupPlayer.statistics?.minutesPlayed !== undefined
+        ? String(lineupPlayer.statistics.minutesPlayed)
+        : "",
+    rating:
+      lineupPlayer.statistics?.rating !== undefined
+        ? String(lineupPlayer.statistics.rating)
+        : "",
+    source_id: `${eventId}:${lineupPlayer.teamId ?? fallbackTeamId ?? ""}:${playerId}`,
+    source: SOURCE,
     edited: false
   };
 };
@@ -483,6 +576,140 @@ const dedupePlayers = (players: PlayerRecord[]): PlayerRecord[] => {
     seen.add(player.source_id);
     return true;
   });
+};
+
+const dedupeLineups = (lineups: Array<LineupRecord | null>): LineupRecord[] => {
+  const seen = new Set<string>();
+
+  return lineups.filter((lineup): lineup is LineupRecord => {
+    if (!lineup) {
+      return false;
+    }
+
+    if (seen.has(lineup.source_id)) {
+      return false;
+    }
+
+    seen.add(lineup.source_id);
+    return true;
+  });
+};
+
+const createAveragePositionMap = (
+  items: Array<{
+    player?: { id?: number };
+    averageX?: number;
+    averageY?: number;
+  }>
+): Map<number, { averageX: number; averageY: number }> => {
+  const positions = new Map<number, { averageX: number; averageY: number }>();
+
+  for (const item of items) {
+    const playerId = item.player?.id;
+
+    if (!playerId || item.averageX === undefined || item.averageY === undefined) {
+      continue;
+    }
+
+    positions.set(playerId, {
+      averageX: item.averageX,
+      averageY: item.averageY
+    });
+  }
+
+  return positions;
+};
+
+const createStarterSlotMap = (
+  starters: Array<{
+    player?: { id?: number };
+    position?: string;
+    substitute?: boolean;
+  }>,
+  formation: string,
+  averagePositions: Map<number, { averageX: number; averageY: number }>
+): Map<number, number> => {
+  const slots = new Map<number, number>();
+  const starterPlayers = starters
+    .filter((item) => item.player?.id)
+    .map((item) => ({
+      playerId: item.player?.id as number,
+      position: item.position?.trim() ?? "",
+      substitute: item.substitute ?? false,
+      averagePosition: averagePositions.get(item.player?.id as number) ?? null
+    }))
+    .filter((item) => !item.substitute);
+
+  const goalkeeper = starterPlayers.find((player) => player.position === "G");
+
+  if (goalkeeper) {
+    slots.set(goalkeeper.playerId, 1);
+  }
+
+  const outfieldPlayers = starterPlayers.filter(
+    (player) => player.playerId !== goalkeeper?.playerId
+  );
+  const formationLines = parseFormation(formation, outfieldPlayers.length);
+  let slot = goalkeeper ? 2 : 1;
+  const sortedPlayers = [...outfieldPlayers].sort((left, right) => {
+    const leftX = left.averagePosition?.averageX ?? Number.POSITIVE_INFINITY;
+    const rightX = right.averagePosition?.averageX ?? Number.POSITIVE_INFINITY;
+
+    if (leftX !== rightX) {
+      return leftX - rightX;
+    }
+
+    const leftY = left.averagePosition?.averageY ?? Number.POSITIVE_INFINITY;
+    const rightY = right.averagePosition?.averageY ?? Number.POSITIVE_INFINITY;
+
+    return leftY - rightY;
+  });
+
+  let offset = 0;
+
+  for (const lineSize of formationLines) {
+    const linePlayers = sortedPlayers.slice(offset, offset + lineSize).sort((left, right) => {
+      const leftY = left.averagePosition?.averageY ?? Number.POSITIVE_INFINITY;
+      const rightY = right.averagePosition?.averageY ?? Number.POSITIVE_INFINITY;
+
+      return leftY - rightY;
+    });
+
+    for (const player of linePlayers) {
+      slots.set(player.playerId, slot);
+      slot += 1;
+    }
+
+    offset += lineSize;
+  }
+
+  if (slots.size < starterPlayers.length) {
+    for (const player of sortedPlayers) {
+      if (!slots.has(player.playerId) && slot <= 11) {
+        slots.set(player.playerId, slot);
+        slot += 1;
+      }
+    }
+  }
+
+  return slots;
+};
+
+const parseFormation = (formation: string, outfieldCount: number): number[] => {
+  const parsed = formation
+    .split("-")
+    .map((value) => Number.parseInt(value, 10))
+    .filter((value) => Number.isFinite(value) && value > 0);
+
+  if (parsed.reduce((total, value) => total + value, 0) === outfieldCount) {
+    return parsed;
+  }
+
+  if (outfieldCount === 10) {
+    return [4, 4, 2];
+  }
+
+  return [outfieldCount];
 };
 
 const toFoundationDate = (timestamp?: number): string => {

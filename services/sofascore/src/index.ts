@@ -24,6 +24,12 @@ import {
   upsertTournaments
 } from "./storage/tournaments-csv.js";
 import {
+  loadLineups,
+  relinkLineupReferences,
+  saveLineups,
+  upsertLineups
+} from "./storage/lineups-csv.js";
+import {
   loadManagers,
   relinkManagerCountries,
   saveManagers,
@@ -71,6 +77,7 @@ const countriesCsvPath = resolve(currentDir, "../data/countries.csv");
 const citiesCsvPath = resolve(currentDir, "../data/cities.csv");
 const stadiumsCsvPath = resolve(currentDir, "../data/stadiums.csv");
 const managersCsvPath = resolve(currentDir, "../data/managers.csv");
+const lineupsCsvPath = resolve(currentDir, "../data/lineups.csv");
 const matchesCsvPath = resolve(currentDir, "../data/matches.csv");
 const refereesCsvPath = resolve(currentDir, "../data/referees.csv");
 const playersCsvPath = resolve(currentDir, "../data/players.csv");
@@ -92,6 +99,7 @@ const run = async (): Promise<void> => {
   const existingCities = await loadCities(citiesCsvPath);
   const existingStadiums = await loadStadiums(stadiumsCsvPath);
   const existingManagers = await loadManagers(managersCsvPath);
+  const existingLineups = await loadLineups(lineupsCsvPath);
   const existingMatches = await loadMatches(matchesCsvPath);
   const existingPlayers = await loadPlayers(playersCsvPath);
   const existingReferees = await loadReferees(refereesCsvPath);
@@ -110,6 +118,7 @@ const run = async (): Promise<void> => {
             return {
               countries: [],
               players: [],
+              lineups: [],
               homeFormation: "",
               awayFormation: ""
             };
@@ -150,6 +159,7 @@ const run = async (): Promise<void> => {
     .map((entry) => entry?.eventMetadata.referee ?? null)
     .filter((referee): referee is RefereeRecord => referee !== null);
   const validManagers = fetchedData.flatMap((entry) => entry?.eventMetadata.managers ?? []);
+  const validLineups = fetchedData.flatMap((entry) => entry?.lineupMetadata.lineups ?? []);
   const validMatches = fetchedData
     .map((entry) => {
       if (!entry?.eventMetadata.match) {
@@ -216,12 +226,19 @@ const run = async (): Promise<void> => {
     managers: normalizedManagers,
     teams: normalizedTeams
   });
+  const mergedLineups = upsertLineups(existingLineups, validLineups);
+  const normalizedLineups = relinkLineupReferences(mergedLineups, {
+    matches: normalizedMatches,
+    teams: normalizedTeams,
+    players: normalizedPlayers
+  });
 
   await saveCountries(countriesCsvPath, mergedCountries);
   await saveCities(citiesCsvPath, normalizedCities);
   await saveStadiums(stadiumsCsvPath, normalizedStadiums);
   await saveTeams(teamsCsvPath, normalizedTeams);
   await saveManagers(managersCsvPath, normalizedManagers);
+  await saveLineups(lineupsCsvPath, normalizedLineups);
   await saveMatches(matchesCsvPath, normalizedMatches);
   await savePlayers(playersCsvPath, normalizedPlayers);
   await saveReferees(refereesCsvPath, normalizedReferees);
@@ -235,6 +252,7 @@ const run = async (): Promise<void> => {
   console.log(`stadiums.csv atualizado com ${validStadiums.length} item(ns) processado(s).`);
   console.log(`teams.csv atualizado com ${validTeams.length} item(ns) processado(s).`);
   console.log(`managers.csv atualizado com ${validManagers.length} item(ns) processado(s).`);
+  console.log(`lineups.csv atualizado com ${validLineups.length} item(ns) processado(s).`);
   console.log(`matches.csv atualizado com ${validMatches.length} item(ns) processado(s).`);
   console.log(`players.csv atualizado com ${validPlayers.length} item(ns) processado(s).`);
   console.log(`referees.csv atualizado com ${validReferees.length} item(ns) processado(s).`);

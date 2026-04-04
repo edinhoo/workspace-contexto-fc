@@ -160,6 +160,23 @@ export type MatchRecord = {
   edited: boolean;
 };
 
+export type LineupRecord = {
+  id: string;
+  match: string;
+  team: string;
+  player: string;
+  jersey_number: string;
+  position: string;
+  substitute: string;
+  is_missing: string;
+  slot: string;
+  minutes_played: string;
+  rating: string;
+  source_id: string;
+  source: "sofascore";
+  edited: boolean;
+};
+
 type SofascoreCountry = {
   id: number;
   name: string;
@@ -354,6 +371,18 @@ type SofascoreLineupPlayer = {
     country?: SofascoreCountry;
     dateOfBirthTimestamp?: number;
   };
+  teamId?: number;
+  shirtNumber?: number;
+  jerseyNumber?: string;
+  position?: string;
+  substitute?: boolean;
+  type?: string;
+  reason?: number;
+  externalType?: number;
+  statistics?: {
+    minutesPlayed?: number;
+    rating?: number;
+  };
 };
 
 export type SofascoreLineupsResponse = {
@@ -368,6 +397,25 @@ export type SofascoreLineupsResponse = {
     missingPlayers?: SofascoreLineupPlayer[];
     formation?: string;
   };
+};
+
+export type SofascoreAveragePositionsResponse = {
+  home?: Array<{
+    player?: {
+      id?: number;
+    };
+    averageX?: number;
+    averageY?: number;
+    pointsCount?: number;
+  }>;
+  away?: Array<{
+    player?: {
+      id?: number;
+    };
+    averageX?: number;
+    averageY?: number;
+    pointsCount?: number;
+  }>;
 };
 
 export type EventMetadata = {
@@ -385,6 +433,7 @@ export type EventMetadata = {
 export type EventLineupsMetadata = {
   countries: CountryRecord[];
   players: PlayerRecord[];
+  lineups: LineupRecord[];
   homeFormation: string;
   awayFormation: string;
 };
