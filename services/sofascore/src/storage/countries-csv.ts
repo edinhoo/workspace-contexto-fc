@@ -1,10 +1,20 @@
 import { slugify } from "@repo/utils";
 
 import type { CountryRecord } from "../types.js";
-import { compareEntityIds, createEntityId, loadCsvRows, saveCsvRows } from "./shared/csv.js";
+import {
+  compareEntityIds,
+  createAuditFields,
+  createEntityId,
+  createSourceRef,
+  loadCsvRows,
+  mergeAuditFields,
+  normalizeAuditFields,
+  saveCsvRows,
+  syncCanonicalField
+} from "./shared/csv.js";
 
 const CSV_HEADER =
-  "id;slug;name;code2;code3;source_slug;source_code2;source_code3;source_name;source;translated";
+  "id;slug;name;code2;code3;source_slug;source_code2;source_code3;source_name;source_ref;source;first_scraped_at;last_scraped_at;created_at;updated_at";
 const SOURCE = "sofascore" as const;
 
 export const loadCountries = async (filePath: string): Promise<CountryRecord[]> => {
@@ -14,7 +24,7 @@ export const loadCountries = async (filePath: string): Promise<CountryRecord[]> 
     return [];
   }
 
-  return normalizeCountries(header, rows);
+  return sortCountries(rows.map((row) => normalizeCountryRow(header, row)));
 };
 
 export const upsertCountries = (
@@ -54,17 +64,16 @@ export const saveCountries = async (
       country.source_code2,
       country.source_code3,
       country.source_name,
+      country.source_ref,
       country.source,
-      String(country.sourcetranslated)
+      country.first_scraped_at,
+      country.last_scraped_at,
+      country.created_at,
+      country.updated_at
     ].join(";")
   );
 
   await saveCsvRows(filePath, CSV_HEADER, rows);
-};
-
-const normalizeCountries = (header: string, rows: string[]): CountryRecord[] => {
-  const countries = rows.map((row) => normalizeCountryRow(header, row));
-  return sortCountries(countries);
 };
 
 const normalizeCountryRow = (header: string, row: string): CountryRecord => {
@@ -83,8 +92,8 @@ const normalizeCountryRow = (header: string, row: string): CountryRecord => {
       source_code2: "",
       source_code3: "",
       source_name: name,
-      source: SOURCE,
-      sourcetranslated: false
+      source_ref: createSourceRef(slug, name),
+      source: SOURCE
     });
   }
 
@@ -101,8 +110,8 @@ const normalizeCountryRow = (header: string, row: string): CountryRecord => {
       source_code2: "",
       source_code3: "",
       source_name: name,
-      source: SOURCE,
-      sourcetranslated: false
+      source_ref: createSourceRef(slug, name),
+      source: SOURCE
     });
   }
 
@@ -116,9 +125,29 @@ const normalizeCountryRow = (header: string, row: string): CountryRecord => {
     source_code2 = "",
     source_code3 = "",
     source_name = "",
-    source = "sofascore",
-    sourcetranslated = "false"
+    legacyOrSourceRef = "",
+    legacySource = SOURCE,
+    legacyTailA = "",
+    legacyTailB = "",
+    legacyTailC = "",
+    legacyTailD = ""
   ] = columns;
+
+  const isLegacyHeader =
+    header ===
+    "id;slug;name;code2;code3;source_slug;source_code2;source_code3;source_name;source;translated";
+  const source_ref = isLegacyHeader
+    ? createSourceRef(source_slug, source_name)
+    : legacyOrSourceRef;
+  const source = isLegacyHeader ? legacySource : legacySource;
+  const audit = isLegacyHeader
+    ? normalizeAuditFields({})
+    : normalizeAuditFields({
+        first_scraped_at: legacyTailA,
+        last_scraped_at: legacyTailB,
+        created_at: legacyTailC,
+        updated_at: legacyTailD
+      });
 
   return finalizeCountry({
     id,
@@ -130,8 +159,9 @@ const normalizeCountryRow = (header: string, row: string): CountryRecord => {
     source_code2,
     source_code3,
     source_name,
+    source_ref,
     source: source === SOURCE ? SOURCE : SOURCE,
-    sourcetranslated: sourcetranslated === "true"
+    ...audit
   });
 };
 
@@ -146,44 +176,66 @@ const createCountry = (country: CountryRecord): CountryRecord =>
     source_code2: country.source_code2,
     source_code3: country.source_code3,
     source_name: country.source_name,
+    source_ref: country.source_ref || createSourceRef(country.source_slug, country.source_name),
     source: SOURCE,
-    sourcetranslated: false
+    ...createAuditFields()
   });
 
 const syncCountry = (existingCountry: CountryRecord, incomingCountry: CountryRecord): CountryRecord => {
-  const shouldSyncCanonicalFields =
-    existingCountry.slug === existingCountry.source_slug &&
-    existingCountry.name === existingCountry.source_name &&
-    existingCountry.code2 === existingCountry.source_code2 &&
-    existingCountry.code3 === existingCountry.source_code3;
-
-  const updatedSourceCountry = {
+  const nextCountry = {
     ...existingCountry,
+    slug: syncCanonicalField(
+      existingCountry.slug,
+      existingCountry.source_slug,
+      incomingCountry.source_slug
+    ),
+    name: syncCanonicalField(
+      existingCountry.name,
+      existingCountry.source_name,
+      incomingCountry.source_name
+    ),
+    code2: syncCanonicalField(
+      existingCountry.code2,
+      existingCountry.source_code2,
+      incomingCountry.source_code2
+    ),
+    code3: syncCanonicalField(
+      existingCountry.code3,
+      existingCountry.source_code3,
+      incomingCountry.source_code3
+    ),
     source_slug: incomingCountry.source_slug,
     source_code2: incomingCountry.source_code2,
     source_code3: incomingCountry.source_code3,
     source_name: incomingCountry.source_name,
+    source_ref: incomingCountry.source_ref || existingCountry.source_ref,
     source: SOURCE
   };
 
-  if (!shouldSyncCanonicalFields) {
-    return finalizeCountry(updatedSourceCountry);
-  }
+  const changed =
+    nextCountry.slug !== existingCountry.slug ||
+    nextCountry.name !== existingCountry.name ||
+    nextCountry.code2 !== existingCountry.code2 ||
+    nextCountry.code3 !== existingCountry.code3 ||
+    nextCountry.source_slug !== existingCountry.source_slug ||
+    nextCountry.source_code2 !== existingCountry.source_code2 ||
+    nextCountry.source_code3 !== existingCountry.source_code3 ||
+    nextCountry.source_name !== existingCountry.source_name ||
+    nextCountry.source_ref !== existingCountry.source_ref;
 
   return finalizeCountry({
-    ...updatedSourceCountry,
-    slug: incomingCountry.source_slug,
-    name: incomingCountry.source_name,
-    code2: incomingCountry.source_code2,
-    code3: incomingCountry.source_code3
+    ...nextCountry,
+    ...mergeAuditFields(existingCountry, changed)
   });
 };
 
 const finalizeCountry = (country: CountryRecord): CountryRecord => {
   const normalizedId = country.id.trim() || createEntityId();
-  const baseCountry = {
+  const audit = normalizeAuditFields(country);
+
+  return {
     id: normalizedId,
-    slug: country.slug.trim(),
+    slug: country.slug.trim() || slugify(country.name.trim()),
     name: country.name.trim(),
     code2: country.code2.trim(),
     code3: country.code3.trim(),
@@ -191,18 +243,9 @@ const finalizeCountry = (country: CountryRecord): CountryRecord => {
     source_code2: country.source_code2.trim(),
     source_code3: country.source_code3.trim(),
     source_name: country.source_name.trim(),
+    source_ref: country.source_ref.trim() || createSourceRef(country.source_slug, country.source_name),
     source: SOURCE,
-    sourcetranslated: false
-  };
-  const translated = isTranslated(baseCountry) || country.sourcetranslated;
-  const normalizedCountry = {
-    ...baseCountry,
-    slug: translated ? slugify(baseCountry.name) : baseCountry.slug
-  };
-
-  return {
-    ...normalizedCountry,
-    sourcetranslated: isTranslated(normalizedCountry)
+    ...audit
   };
 };
 
@@ -212,13 +255,5 @@ const isSameSourceCountry = (left: CountryRecord, right: CountryRecord): boolean
   left.source_code2 === right.source_code2 &&
   left.source_code3 === right.source_code3;
 
-const isTranslated = (country: Omit<CountryRecord, "sourcetranslated">): boolean =>
-  country.slug !== country.source_slug ||
-  country.name !== country.source_name ||
-  country.code2 !== country.source_code2 ||
-  country.code3 !== country.source_code3;
-
 const sortCountries = (countries: CountryRecord[]): CountryRecord[] =>
-  [...countries].sort((left, right) => compareIds(left.id, right.id));
-
-const compareIds = (leftId: string, rightId: string): number => compareEntityIds(leftId, rightId);
+  [...countries].sort((left, right) => compareEntityIds(left.id, right.id));

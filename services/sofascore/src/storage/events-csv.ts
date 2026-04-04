@@ -8,7 +8,7 @@ import type {
 import { compareEntityIds, createEntityId, loadCsvRows, saveCsvRows } from "./shared/csv.js";
 
 const CSV_HEADER =
-  "id;match;sort_order;team;player;related_player;manager;incident_type;incident_class;period;minute;added_time;reversed_period_time;is_home;impact_side;is_confirmed;is_rescinded;reason;description;is_injury;home_score;away_score;length;body_part;goal_type;situation;shot_type;player_x;player_y;pass_end_x;pass_end_y;shot_x;shot_y;goal_mouth_x;goal_mouth_y;goalkeeper_x;goalkeeper_y;source_id;source;edited";
+  "id;match;sort_order;team;player;related_player;manager;incident_type;incident_class;period;minute;added_time;reversed_period_time;is_home;impact_side;is_confirmed;is_rescinded;reason;description;is_injury;home_score;away_score;length;body_part;goal_type;situation;shot_type;player_x;player_y;pass_end_x;pass_end_y;shot_x;shot_y;goal_mouth_x;goal_mouth_y;goalkeeper_x;goalkeeper_y;source_ref;source;edited";
 const SOURCE = "sofascore" as const;
 
 export const loadEvents = async (filePath: string): Promise<EventRecord[]> => {
@@ -29,7 +29,7 @@ export const upsertEvents = (
 
   for (const incomingEvent of incomingEvents) {
     const existingEventIndex = events.findIndex(
-      (existingEvent) => existingEvent.source_id === incomingEvent.source_id
+      (existingEvent) => existingEvent.source_ref === incomingEvent.source_ref
     );
 
     if (existingEventIndex === -1) {
@@ -56,21 +56,21 @@ export const relinkEventReferences = (
     events
       .map((event) => {
         const linkedMatch = references.matches.find(
-          (match) => match.id === event.match || match.source_id === event.match
+          (match) => match.id === event.match || match.source_ref === event.match
         );
         const baseLinkedTeam =
           event.team === "home"
             ? linkedMatch?.home_team
             : event.team === "away"
               ? linkedMatch?.away_team
-              : findReferenceId(references.teams, event.team, "source_id");
-        const linkedPlayer = findReferenceId(references.players, event.player, "source_id");
+              : findReferenceId(references.teams, event.team, "source_ref");
+        const linkedPlayer = findReferenceId(references.players, event.player, "source_ref");
         const linkedRelatedPlayer = findReferenceId(
           references.players,
           event.related_player,
-          "source_id"
+          "source_ref"
         );
-        const linkedManager = findReferenceId(references.managers, event.manager, "source_id");
+        const linkedManager = findReferenceId(references.managers, event.manager, "source_ref");
         const isPrimaryMatchManager =
           Boolean(linkedManager) &&
           (linkedManager === linkedMatch?.home_manager || linkedManager === linkedMatch?.away_manager);
@@ -143,7 +143,7 @@ export const saveEvents = async (filePath: string, events: EventRecord[]): Promi
       event.goal_mouth_y,
       event.goalkeeper_x,
       event.goalkeeper_y,
-      event.source_id,
+      event.source_ref,
       event.source,
       String(event.edited)
     ].join(";")
@@ -192,7 +192,7 @@ const normalizeEventRow = (row: string): EventRecord => {
     goal_mouth_y = "",
     goalkeeper_x = "",
     goalkeeper_y = "",
-    source_id = "",
+    source_ref = "",
     source = SOURCE,
     edited = "false"
   ] = columns;
@@ -235,7 +235,7 @@ const normalizeEventRow = (row: string): EventRecord => {
     goal_mouth_y,
     goalkeeper_x,
     goalkeeper_y,
-    source_id,
+    source_ref,
     source: source === SOURCE ? SOURCE : SOURCE,
     edited: edited === "true"
   });
@@ -253,7 +253,7 @@ const syncEvent = (existingEvent: EventRecord, incomingEvent: EventRecord): Even
   if (existingEvent.edited) {
     return finalizeEvent({
       ...existingEvent,
-      source_id: incomingEvent.source_id,
+      source_ref: incomingEvent.source_ref,
       source: SOURCE
     });
   }
@@ -296,7 +296,7 @@ const syncEvent = (existingEvent: EventRecord, incomingEvent: EventRecord): Even
     goal_mouth_y: incomingEvent.goal_mouth_y,
     goalkeeper_x: incomingEvent.goalkeeper_x,
     goalkeeper_y: incomingEvent.goalkeeper_y,
-    source_id: incomingEvent.source_id,
+    source_ref: incomingEvent.source_ref,
     source: SOURCE
   });
 };
@@ -339,7 +339,7 @@ const finalizeEvent = (event: EventRecord): EventRecord => ({
   goal_mouth_y: event.goal_mouth_y.trim(),
   goalkeeper_x: event.goalkeeper_x.trim(),
   goalkeeper_y: event.goalkeeper_y.trim(),
-  source_id: event.source_id.trim(),
+  source_ref: event.source_ref.trim(),
   source: SOURCE,
   edited: event.edited
 });

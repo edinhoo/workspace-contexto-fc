@@ -1,10 +1,19 @@
 import { slugify } from "@repo/utils";
 
 import type { StadiumRecord, TeamRecord } from "../types.js";
-import { compareEntityIds, createEntityId, loadCsvRows, saveCsvRows } from "./shared/csv.js";
+import {
+  compareEntityIds,
+  createAuditFields,
+  createEntityId,
+  loadCsvRows,
+  mergeAuditFields,
+  normalizeAuditFields,
+  saveCsvRows
+} from "./shared/csv.js";
 
 const CSV_HEADER =
-  "id;slug;name;code3;short_name;complete_name;stadium;foundation;primary_color;secondary_color;text_color;source_id;edited";
+  "id;slug;name;code3;short_name;complete_name;stadium;foundation;primary_color;secondary_color;text_color;source_ref;source;first_scraped_at;last_scraped_at;created_at;updated_at";
+const SOURCE = "sofascore" as const;
 
 export const loadTeams = async (filePath: string): Promise<TeamRecord[]> => {
   const { header, rows } = await loadCsvRows(filePath);
@@ -25,7 +34,7 @@ export const upsertTeams = (
   for (const incomingTeam of incomingTeams) {
     const existingTeamIndex = teams.findIndex(
       (existingTeam) =>
-        (existingTeam.source_id && existingTeam.source_id === incomingTeam.source_id) ||
+        (existingTeam.source_ref && existingTeam.source_ref === incomingTeam.source_ref) ||
         (existingTeam.slug === incomingTeam.slug && existingTeam.name === incomingTeam.name)
     );
 
@@ -47,7 +56,7 @@ export const relinkTeamStadiums = (
   sortTeams(
     teams.map((team) => {
       const linkedStadium = stadiums.find(
-        (stadium) => stadium.id === team.stadium || stadium.source_id === team.stadium
+        (stadium) => stadium.id === team.stadium || stadium.source_ref === team.stadium
       );
 
       if (!linkedStadium) {
@@ -75,8 +84,12 @@ export const saveTeams = async (filePath: string, teams: TeamRecord[]): Promise<
       team.primary_color,
       team.secondary_color,
       team.text_color,
-      team.source_id,
-      String(team.edited)
+      team.source_ref,
+      team.source,
+      team.first_scraped_at,
+      team.last_scraped_at,
+      team.created_at,
+      team.updated_at
     ].join(";")
   );
 
@@ -101,8 +114,7 @@ const normalizeTeamRow = (header: string, row: string): TeamRecord => {
       foundation = "",
       primary_color = "",
       secondary_color = "",
-      text_color = "",
-      edited = "false"
+      text_color = ""
     ] = columns;
 
     return finalizeTeam({
@@ -117,8 +129,8 @@ const normalizeTeamRow = (header: string, row: string): TeamRecord => {
       primary_color,
       secondary_color,
       text_color,
-      source_id: "",
-      edited: edited === "true"
+      source_ref: "",
+      source: SOURCE
     });
   }
 
@@ -134,27 +146,26 @@ const normalizeTeamRow = (header: string, row: string): TeamRecord => {
     primary_color = "",
     secondary_color = "",
     text_color = "",
-    source_id = "",
-    edited = "false"
+    source_ref = "",
+    legacyOrSource = SOURCE,
+    tailA = "",
+    tailB = "",
+    tailC = "",
+    tailD = ""
   ] = columns;
 
-  if (header === CSV_HEADER) {
-    return finalizeTeam({
-      id,
-      slug,
-      name,
-      code3,
-      short_name,
-      complete_name,
-      stadium,
-      foundation,
-      primary_color,
-      secondary_color,
-      text_color,
-      source_id,
-      edited: edited === "true"
-    });
-  }
+  const isLegacyHeader =
+    header ===
+    "id;slug;name;code3;short_name;complete_name;stadium;foundation;primary_color;secondary_color;text_color;source_ref;edited";
+  const source = legacyOrSource === SOURCE ? SOURCE : SOURCE;
+  const audit = isLegacyHeader
+    ? normalizeAuditFields({})
+    : normalizeAuditFields({
+        first_scraped_at: tailA,
+        last_scraped_at: tailB,
+        created_at: tailC,
+        updated_at: tailD
+      });
 
   return finalizeTeam({
     id,
@@ -168,8 +179,9 @@ const normalizeTeamRow = (header: string, row: string): TeamRecord => {
     primary_color,
     secondary_color,
     text_color,
-    source_id,
-    edited: edited === "true"
+    source_ref,
+    source,
+    ...audit
   });
 };
 
@@ -186,20 +198,13 @@ const createTeam = (team: TeamRecord): TeamRecord =>
     primary_color: team.primary_color,
     secondary_color: team.secondary_color,
     text_color: team.text_color,
-    source_id: team.source_id,
-    edited: false
+    source_ref: team.source_ref,
+    source: SOURCE,
+    ...createAuditFields()
   });
 
 const syncTeam = (existingTeam: TeamRecord, incomingTeam: TeamRecord): TeamRecord => {
-  if (existingTeam.edited) {
-    return finalizeTeam({
-      ...existingTeam,
-      stadium: incomingTeam.stadium,
-      source_id: incomingTeam.source_id
-    });
-  }
-
-  return finalizeTeam({
+  const nextTeam = {
     ...existingTeam,
     slug: incomingTeam.slug,
     name: incomingTeam.name,
@@ -211,7 +216,15 @@ const syncTeam = (existingTeam: TeamRecord, incomingTeam: TeamRecord): TeamRecor
     primary_color: incomingTeam.primary_color,
     secondary_color: incomingTeam.secondary_color,
     text_color: incomingTeam.text_color,
-    source_id: incomingTeam.source_id
+    source_ref: incomingTeam.source_ref,
+    source: SOURCE
+  };
+
+  const changed = JSON.stringify(nextTeam) !== JSON.stringify({ ...existingTeam, source: SOURCE });
+
+  return finalizeTeam({
+    ...nextTeam,
+    ...mergeAuditFields(existingTeam, changed)
   });
 };
 
@@ -227,8 +240,9 @@ const finalizeTeam = (team: TeamRecord): TeamRecord => ({
   primary_color: team.primary_color.trim(),
   secondary_color: team.secondary_color.trim(),
   text_color: team.text_color.trim(),
-  source_id: team.source_id.trim(),
-  edited: team.edited
+  source_ref: team.source_ref.trim(),
+  source: SOURCE,
+  ...normalizeAuditFields(team)
 });
 
 const sortTeams = (teams: TeamRecord[]): TeamRecord[] =>

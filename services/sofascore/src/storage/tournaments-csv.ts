@@ -4,7 +4,7 @@ import type { CountryRecord, TournamentRecord } from "../types.js";
 import { compareEntityIds, createEntityId, loadCsvRows, saveCsvRows } from "./shared/csv.js";
 
 const CSV_HEADER =
-  "id;slug;name;short_name;country;primary_color;secondary_color;source_id;source_slug;source_name;source_primary_color;source_secondary_color;source;translated";
+  "id;slug;name;short_name;country;primary_color;secondary_color;source_ref;source_slug;source_name;source_primary_color;source_secondary_color;source;translated";
 const SOURCE = "sofascore" as const;
 
 export const loadTournaments = async (filePath: string): Promise<TournamentRecord[]> => {
@@ -25,7 +25,7 @@ export const upsertTournaments = (
 
   for (const incomingTournament of incomingTournaments) {
     const existingTournamentIndex = tournaments.findIndex(
-      (existingTournament) => existingTournament.source_id === incomingTournament.source_id
+      (existingTournament) => existingTournament.source_ref === incomingTournament.source_ref
     );
 
     if (existingTournamentIndex === -1) {
@@ -76,7 +76,7 @@ export const saveTournaments = async (
       tournament.country,
       tournament.primary_color,
       tournament.secondary_color,
-      tournament.source_id,
+      tournament.source_ref,
       tournament.source_slug,
       tournament.source_name,
       tournament.source_primary_color,
@@ -94,7 +94,7 @@ const normalizeTournamentRow = (header: string, row: string): TournamentRecord =
 
   if (
     header ===
-    "id;slug;name;country;primary_color;secondary_color;source_id;source_slug;source_name;source_primary_color;source_secondary_color;source;translated"
+    "id;slug;name;country;primary_color;secondary_color;source_ref;source_slug;source_name;source_primary_color;source_secondary_color;source;translated"
   ) {
     const [
       id = "",
@@ -103,7 +103,7 @@ const normalizeTournamentRow = (header: string, row: string): TournamentRecord =
       country = "",
       primary_color = "",
       secondary_color = "",
-      source_id = "",
+      source_ref = "",
       source_slug = "",
       source_name = "",
       source_primary_color = "",
@@ -120,7 +120,7 @@ const normalizeTournamentRow = (header: string, row: string): TournamentRecord =
       country,
       primary_color,
       secondary_color,
-      source_id,
+      source_ref,
       source_slug,
       source_name,
       source_primary_color,
@@ -138,7 +138,7 @@ const normalizeTournamentRow = (header: string, row: string): TournamentRecord =
     country = "",
     primary_color = "",
     secondary_color = "",
-    source_id = "",
+    source_ref = "",
     source_slug = "",
     source_name = "",
     source_primary_color = "",
@@ -156,7 +156,7 @@ const normalizeTournamentRow = (header: string, row: string): TournamentRecord =
       country,
       primary_color,
       secondary_color,
-      source_id,
+      source_ref,
       source_slug,
       source_name,
       source_primary_color,
@@ -174,7 +174,7 @@ const normalizeTournamentRow = (header: string, row: string): TournamentRecord =
     country,
     primary_color,
     secondary_color,
-    source_id,
+    source_ref,
     source_slug: source_slug || slug,
     source_name: source_name || name,
     source_primary_color: source_primary_color || primary_color,
@@ -193,7 +193,7 @@ const createTournament = (tournament: TournamentRecord): TournamentRecord =>
     country: tournament.country,
     primary_color: tournament.source_primary_color,
     secondary_color: tournament.source_secondary_color,
-    source_id: tournament.source_id,
+    source_ref: tournament.source_ref,
     source_slug: tournament.source_slug,
     source_name: tournament.source_name,
     source_primary_color: tournament.source_primary_color,
@@ -216,7 +216,7 @@ const syncTournament = (
   const updatedSourceTournament = {
     ...existingTournament,
     country: incomingTournament.country,
-    source_id: incomingTournament.source_id,
+    source_ref: incomingTournament.source_ref,
     source_slug: incomingTournament.source_slug,
     source_name: incomingTournament.source_name,
     source_primary_color: incomingTournament.source_primary_color,
@@ -248,7 +248,7 @@ const finalizeTournament = (tournament: TournamentRecord): TournamentRecord => {
     country: tournament.country.trim(),
     primary_color: tournament.primary_color.trim(),
     secondary_color: tournament.secondary_color.trim(),
-    source_id: tournament.source_id.trim(),
+    source_ref: tournament.source_ref.trim(),
     source_slug: tournament.source_slug.trim(),
     source_name: tournament.source_name.trim(),
     source_primary_color: tournament.source_primary_color.trim(),

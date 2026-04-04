@@ -4,7 +4,7 @@ import type { SeasonRecord, TournamentRecord } from "../types.js";
 import { compareEntityIds, createEntityId, loadCsvRows, saveCsvRows } from "./shared/csv.js";
 
 const CSV_HEADER =
-  "id;slug;name;short_name;year;tournament;source_id;source_name;source_year;source;translated";
+  "id;slug;name;short_name;year;tournament;source_ref;source_name;source_year;source;translated";
 const SOURCE = "sofascore" as const;
 
 export const loadSeasons = async (filePath: string): Promise<SeasonRecord[]> => {
@@ -25,7 +25,7 @@ export const upsertSeasons = (
 
   for (const incomingSeason of incomingSeasons) {
     const existingSeasonIndex = seasons.findIndex(
-      (existingSeason) => existingSeason.source_id === incomingSeason.source_id
+      (existingSeason) => existingSeason.source_ref === incomingSeason.source_ref
     );
 
     if (existingSeasonIndex === -1) {
@@ -47,7 +47,7 @@ export const relinkSeasonTournaments = (
     seasons.map((season) => {
       const linkedTournament = tournaments.find(
         (tournament) =>
-          tournament.id === season.tournament || tournament.source_id === season.tournament
+          tournament.id === season.tournament || tournament.source_ref === season.tournament
       );
 
       if (!linkedTournament) {
@@ -73,7 +73,7 @@ export const saveSeasons = async (
       season.short_name,
       season.year,
       season.tournament,
-      season.source_id,
+      season.source_ref,
       season.source_name,
       season.source_year,
       season.source,
@@ -89,7 +89,7 @@ const normalizeSeasonRow = (header: string, row: string): SeasonRecord => {
 
   if (
     header ===
-    "id;slug;name;short_name;year;tournament;source_id;source_slug;source_name;source_year;source;translated"
+    "id;slug;name;short_name;year;tournament;source_ref;source_slug;source_name;source_year;source;translated"
   ) {
     const [
       id = "",
@@ -98,7 +98,7 @@ const normalizeSeasonRow = (header: string, row: string): SeasonRecord => {
       short_name = "",
       year = "",
       tournament = "",
-      source_id = "",
+      source_ref = "",
       source_name = "",
       source_year = "",
       source = SOURCE,
@@ -112,7 +112,7 @@ const normalizeSeasonRow = (header: string, row: string): SeasonRecord => {
       short_name,
       year,
       tournament,
-      source_id,
+      source_ref,
       source_name,
       source_year,
       source: source === SOURCE ? SOURCE : SOURCE,
@@ -127,7 +127,7 @@ const normalizeSeasonRow = (header: string, row: string): SeasonRecord => {
     short_name = "",
     year = "",
     tournament = "",
-    source_id = "",
+    source_ref = "",
     source_name = "",
     source_year = "",
     source = SOURCE,
@@ -142,7 +142,7 @@ const normalizeSeasonRow = (header: string, row: string): SeasonRecord => {
       short_name,
       year,
       tournament,
-      source_id,
+      source_ref,
       source_name,
       source_year,
       source: source === SOURCE ? SOURCE : SOURCE,
@@ -157,7 +157,7 @@ const normalizeSeasonRow = (header: string, row: string): SeasonRecord => {
     short_name: short_name || name,
     year,
     tournament,
-    source_id,
+    source_ref,
     source_name: source_name || name,
     source_year: source_year || year,
     source: SOURCE,
@@ -173,7 +173,7 @@ const createSeason = (season: SeasonRecord): SeasonRecord =>
     short_name: season.source_name,
     year: season.source_year,
     tournament: season.tournament,
-    source_id: season.source_id,
+    source_ref: season.source_ref,
     source_name: season.source_name,
     source_year: season.source_year,
     source: SOURCE,
@@ -189,7 +189,7 @@ const syncSeason = (existingSeason: SeasonRecord, incomingSeason: SeasonRecord):
   const updatedSourceSeason = {
     ...existingSeason,
     tournament: incomingSeason.tournament,
-    source_id: incomingSeason.source_id,
+    source_ref: incomingSeason.source_ref,
     source_name: incomingSeason.source_name,
     source_year: incomingSeason.source_year,
     source: SOURCE
@@ -217,7 +217,7 @@ const finalizeSeason = (season: SeasonRecord): SeasonRecord => {
     short_name: season.short_name.trim(),
     year: season.year.trim(),
     tournament: season.tournament.trim(),
-    source_id: season.source_id.trim(),
+    source_ref: season.source_ref.trim(),
     source_name: season.source_name.trim(),
     source_year: season.source_year.trim(),
     source: SOURCE,

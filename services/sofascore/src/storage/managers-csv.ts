@@ -1,9 +1,18 @@
 import { slugify } from "@repo/utils";
 
 import type { CountryRecord, ManagerRecord } from "../types.js";
-import { compareEntityIds, createEntityId, loadCsvRows, saveCsvRows } from "./shared/csv.js";
+import {
+  compareEntityIds,
+  createAuditFields,
+  createEntityId,
+  loadCsvRows,
+  mergeAuditFields,
+  normalizeAuditFields,
+  saveCsvRows
+} from "./shared/csv.js";
 
-const CSV_HEADER = "id;slug;name;short_name;country;source_id;source;edited";
+const CSV_HEADER =
+  "id;slug;name;short_name;country;source_ref;source;first_scraped_at;last_scraped_at;created_at;updated_at";
 const SOURCE = "sofascore" as const;
 
 export const loadManagers = async (filePath: string): Promise<ManagerRecord[]> => {
@@ -24,7 +33,7 @@ export const upsertManagers = (
 
   for (const incomingManager of incomingManagers) {
     const existingManagerIndex = managers.findIndex(
-      (existingManager) => existingManager.source_id === incomingManager.source_id
+      (existingManager) => existingManager.source_ref === incomingManager.source_ref
     );
 
     if (existingManagerIndex === -1) {
@@ -67,9 +76,12 @@ export const saveManagers = async (filePath: string, managers: ManagerRecord[]):
       manager.name,
       manager.short_name,
       manager.country,
-      manager.source_id,
+      manager.source_ref,
       manager.source,
-      String(manager.edited)
+      manager.first_scraped_at,
+      manager.last_scraped_at,
+      manager.created_at,
+      manager.updated_at
     ].join(";")
   );
 
@@ -78,30 +90,29 @@ export const saveManagers = async (filePath: string, managers: ManagerRecord[]):
 
 const normalizeManagerRow = (header: string, row: string): ManagerRecord => {
   const columns = row.split(";");
-
   const [
     id = "",
     slug = "",
     name = "",
     short_name = "",
     country = "",
-    source_id = "",
-    source = SOURCE,
-    edited = "false"
+    source_ref = "",
+    legacyOrSource = SOURCE,
+    tailA = "",
+    tailB = "",
+    tailC = "",
+    tailD = ""
   ] = columns;
 
-  if (header === CSV_HEADER) {
-    return finalizeManager({
-      id,
-      slug,
-      name,
-      short_name,
-      country,
-      source_id,
-      source: source === SOURCE ? SOURCE : SOURCE,
-      edited: edited === "true"
-    });
-  }
+  const isLegacyHeader = header === "id;slug;name;short_name;country;source_ref;source;edited";
+  const audit = isLegacyHeader
+    ? normalizeAuditFields({})
+    : normalizeAuditFields({
+        first_scraped_at: tailA,
+        last_scraped_at: tailB,
+        created_at: tailC,
+        updated_at: tailD
+      });
 
   return finalizeManager({
     id,
@@ -109,9 +120,9 @@ const normalizeManagerRow = (header: string, row: string): ManagerRecord => {
     name,
     short_name: short_name || name,
     country,
-    source_id,
-    source: SOURCE,
-    edited: edited === "true"
+    source_ref,
+    source: legacyOrSource === SOURCE ? SOURCE : SOURCE,
+    ...audit
   });
 };
 
@@ -122,54 +133,39 @@ const createManager = (manager: ManagerRecord): ManagerRecord =>
     name: manager.name,
     short_name: manager.short_name || manager.name,
     country: manager.country,
-    source_id: manager.source_id,
+    source_ref: manager.source_ref,
     source: SOURCE,
-    edited: false
+    ...createAuditFields()
   });
 
 const syncManager = (existingManager: ManagerRecord, incomingManager: ManagerRecord): ManagerRecord => {
-  const shouldSyncCanonicalFields =
-    existingManager.slug === incomingManager.slug &&
-    existingManager.name === incomingManager.name &&
-    existingManager.short_name === incomingManager.short_name;
-
-  const updatedManager = {
+  const nextManager = {
     ...existingManager,
-    country: incomingManager.country,
-    source_id: incomingManager.source_id,
-    source: SOURCE
-  };
-
-  if (!shouldSyncCanonicalFields) {
-    return finalizeManager(updatedManager);
-  }
-
-  return finalizeManager({
-    ...updatedManager,
     slug: incomingManager.slug,
     name: incomingManager.name,
-    short_name: incomingManager.short_name
+    short_name: incomingManager.short_name || incomingManager.name,
+    country: incomingManager.country,
+    source_ref: incomingManager.source_ref,
+    source: SOURCE
+  };
+  const changed = JSON.stringify(nextManager) !== JSON.stringify({ ...existingManager, source: SOURCE });
+
+  return finalizeManager({
+    ...nextManager,
+    ...mergeAuditFields(existingManager, changed)
   });
 };
 
-const finalizeManager = (manager: ManagerRecord): ManagerRecord => {
-  const normalizedId = manager.id.trim() || createEntityId();
-  const baseManager = {
-    id: normalizedId,
-    slug: slugify(manager.name.trim() || manager.slug.trim()),
-    name: manager.name.trim(),
-    short_name: manager.short_name.trim(),
-    country: manager.country.trim(),
-    source_id: manager.source_id.trim(),
-    source: SOURCE,
-    edited: false
-  };
-
-  return {
-    ...baseManager,
-    edited: manager.edited || baseManager.short_name !== baseManager.name
-  };
-};
+const finalizeManager = (manager: ManagerRecord): ManagerRecord => ({
+  id: manager.id.trim() || createEntityId(),
+  slug: slugify(manager.name.trim() || manager.slug.trim()),
+  name: manager.name.trim(),
+  short_name: manager.short_name.trim(),
+  country: manager.country.trim(),
+  source_ref: manager.source_ref.trim(),
+  source: SOURCE,
+  ...normalizeAuditFields(manager)
+});
 
 const sortManagers = (managers: ManagerRecord[]): ManagerRecord[] =>
   [...managers].sort((left, right) => compareEntityIds(left.id, right.id));

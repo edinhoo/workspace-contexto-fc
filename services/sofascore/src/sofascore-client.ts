@@ -25,6 +25,7 @@ import type {
   TeamRecord,
   TournamentRecord
 } from "./types.js";
+import { createSourceRef } from "./storage/shared/csv.js";
 
 const SOURCE = "sofascore" as const;
 
@@ -84,7 +85,7 @@ export const fetchEventMetadataByEventId = async (
           country: country.slug,
           primary_color: uniqueTournament.primaryColorHex ?? "",
           secondary_color: uniqueTournament.secondaryColorHex ?? "",
-          source_id: String(uniqueTournament.id),
+          source_ref: String(uniqueTournament.id),
           source_slug: tournament.slug,
           source_name: tournament.name,
           source_primary_color: uniqueTournament.primaryColorHex ?? "",
@@ -103,7 +104,7 @@ export const fetchEventMetadataByEventId = async (
           short_name: season.name,
           year: season.year ?? "",
           tournament: String(uniqueTournament.id),
-          source_id: String(season.id),
+          source_ref: String(season.id),
           source_name: season.name,
           source_year: season.year ?? "",
           source: SOURCE,
@@ -131,7 +132,7 @@ export const fetchEventMetadataByEventId = async (
           name: referee.name,
           short_name: referee.name,
           country: referee.country.slug,
-          source_id: String(referee.id),
+          source_ref: String(referee.id),
           source: SOURCE,
           edited: false
         }
@@ -145,7 +146,7 @@ export const fetchEventMetadataByEventId = async (
       name: manager.name,
       short_name: manager.shortName ?? manager.name,
       country: manager.country?.slug ?? "",
-      source_id: String(manager.id),
+      source_ref: String(manager.id),
       source: SOURCE,
       edited: false
     }));
@@ -329,6 +330,7 @@ const createCountryRecord = (country: {
   name: country.name,
   code2: country.alpha2 ?? "",
   code3: country.alpha3 ?? "",
+  source_ref: createSourceRef(country.slug, country.name),
   source_slug: country.slug,
   source_code2: country.alpha2 ?? "",
   source_code3: country.alpha3 ?? "",
@@ -348,6 +350,7 @@ const createCityRecord = (
         name: cityName,
         short_name: cityName,
         country: countrySlug,
+        source_ref: createSourceRef(cityName),
         source_name: cityName,
         source: SOURCE,
         edited: false
@@ -382,7 +385,7 @@ const createStadiumRecord = (
           venue.venueCoordinates?.longitude !== undefined
             ? String(venue.venueCoordinates.longitude)
             : "",
-        source_id: String(venue.id),
+        source_ref: String(venue.id),
         source: SOURCE,
         edited: false
       }
@@ -410,7 +413,8 @@ const createTeamRecord = (team: {
   primary_color: team.teamColors?.primary ?? "",
   secondary_color: team.teamColors?.secondary ?? "",
   text_color: team.teamColors?.text ?? "",
-  source_id: String(team.id),
+  source_ref: String(team.id),
+  source: SOURCE,
   edited: false
 });
 
@@ -445,7 +449,7 @@ const createPlayerRecord = (player?: {
     country: player.country?.slug ?? "",
     date_of_birth: toDateString(player.dateOfBirthTimestamp),
     source: SOURCE,
-    source_id: String(player.id),
+    source_ref: String(player.id),
     edited: false
   };
 };
@@ -494,7 +498,7 @@ const createLineupRecord = (
       lineupPlayer.statistics?.rating !== undefined
         ? String(lineupPlayer.statistics.rating)
         : "",
-    source_id: `${eventId}:${canonicalTeamId}:${playerId}`,
+    source_ref: `${eventId}:${canonicalTeamId}:${playerId}`,
     source: SOURCE,
     edited: false
   };
@@ -598,7 +602,7 @@ const createPlayerMatchStatRecord = (
     penalty_won: stringifyStat(statistics.penaltyWon),
     penalty_miss: stringifyStat(statistics.penaltyMiss),
     penalty_save: stringifyStat(statistics.penaltySave),
-    source_id: `${eventId}:${teamId}:${playerId}`,
+    source_ref: `${eventId}:${teamId}:${playerId}`,
     source: SOURCE,
     edited: false
   };
@@ -674,7 +678,7 @@ const createMatchRecord = (event: {
   injury_time_2: stringifyOptionalNumber(event.injuryTime2),
   injury_time_3: stringifyOptionalNumber(event.injuryTime3),
   injury_time_4: stringifyOptionalNumber(event.injuryTime4),
-  source_id: String(event.id),
+  source_ref: String(event.id),
   source: SOURCE,
   edited: false
 });
@@ -721,11 +725,11 @@ const dedupeStadiums = (stadiums: Array<StadiumRecord | null>): StadiumRecord[] 
       return false;
     }
 
-    if (seen.has(stadium.source_id)) {
+    if (seen.has(stadium.source_ref)) {
       return false;
     }
 
-    seen.add(stadium.source_id);
+    seen.add(stadium.source_ref);
     return true;
   });
 };
@@ -734,11 +738,11 @@ const dedupePlayers = (players: PlayerRecord[]): PlayerRecord[] => {
   const seen = new Set<string>();
 
   return players.filter((player) => {
-    if (seen.has(player.source_id)) {
+    if (seen.has(player.source_ref)) {
       return false;
     }
 
-    seen.add(player.source_id);
+    seen.add(player.source_ref);
     return true;
   });
 };
@@ -751,11 +755,11 @@ const dedupeLineups = (lineups: Array<LineupRecord | null>): LineupRecord[] => {
       return false;
     }
 
-    if (seen.has(lineup.source_id)) {
+    if (seen.has(lineup.source_ref)) {
       return false;
     }
 
-    seen.add(lineup.source_id);
+    seen.add(lineup.source_ref);
     return true;
   });
 };
@@ -770,11 +774,11 @@ const dedupePlayerMatchStats = (
       return false;
     }
 
-    if (seen.has(stat.source_id)) {
+    if (seen.has(stat.source_ref)) {
       return false;
     }
 
-    seen.add(stat.source_id);
+    seen.add(stat.source_ref);
     return true;
   });
 };
@@ -787,11 +791,11 @@ const dedupeEvents = (events: Array<EventRecord | null>): EventRecord[] => {
       return false;
     }
 
-    if (seen.has(event.source_id)) {
+    if (seen.has(event.source_ref)) {
       return false;
     }
 
-    seen.add(event.source_id);
+    seen.add(event.source_ref);
     return true;
   });
 };
@@ -870,7 +874,7 @@ const createEventRecord = (
     ),
     goalkeeper_x: stringifyOptionalNumber(passingContext.goalkeeper_x),
     goalkeeper_y: stringifyOptionalNumber(passingContext.goalkeeper_y),
-    source_id: sourceId,
+    source_ref: sourceId,
     source: SOURCE,
     edited: false
   };

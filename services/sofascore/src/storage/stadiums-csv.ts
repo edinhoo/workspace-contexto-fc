@@ -4,7 +4,7 @@ import type { CityRecord, StadiumRecord } from "../types.js";
 import { compareEntityIds, createEntityId, loadCsvRows, saveCsvRows } from "./shared/csv.js";
 
 const CSV_HEADER =
-  "id;slug;name;short_name;city;capacity;latitude;longitude;source_id;source;edited";
+  "id;slug;name;short_name;city;capacity;latitude;longitude;source_ref;source;edited";
 const SOURCE = "sofascore" as const;
 
 export const loadStadiums = async (filePath: string): Promise<StadiumRecord[]> => {
@@ -25,7 +25,7 @@ export const upsertStadiums = (
 
   for (const incomingStadium of incomingStadiums) {
     const existingStadiumIndex = stadiums.findIndex(
-      (existingStadium) => existingStadium.source_id === incomingStadium.source_id
+      (existingStadium) => existingStadium.source_ref === incomingStadium.source_ref
     );
 
     if (existingStadiumIndex === -1) {
@@ -73,7 +73,7 @@ export const saveStadiums = async (
       stadium.capacity,
       stadium.latitude,
       stadium.longitude,
-      stadium.source_id,
+      stadium.source_ref,
       stadium.source,
       String(stadium.edited)
     ].join(";")
@@ -94,7 +94,7 @@ const normalizeStadiumRow = (header: string, row: string): StadiumRecord => {
     capacity = "",
     latitude = "",
     longitude = "",
-    source_id = "",
+    source_ref = "",
     source = SOURCE,
     edited = "false"
   ] = columns;
@@ -109,7 +109,7 @@ const normalizeStadiumRow = (header: string, row: string): StadiumRecord => {
       capacity,
       latitude,
       longitude,
-      source_id,
+      source_ref,
       source: source === SOURCE ? SOURCE : SOURCE,
       edited: edited === "true"
     });
@@ -124,7 +124,7 @@ const normalizeStadiumRow = (header: string, row: string): StadiumRecord => {
     capacity,
     latitude,
     longitude,
-    source_id,
+    source_ref,
     source: SOURCE,
     edited: edited === "true"
   });
@@ -140,7 +140,7 @@ const createStadium = (stadium: StadiumRecord): StadiumRecord =>
     capacity: stadium.capacity,
     latitude: stadium.latitude,
     longitude: stadium.longitude,
-    source_id: stadium.source_id,
+    source_ref: stadium.source_ref,
     source: SOURCE,
     edited: false
   });
@@ -159,7 +159,7 @@ const syncStadium = (
   const updatedStadium = {
     ...existingStadium,
     city: incomingStadium.city,
-    source_id: incomingStadium.source_id,
+    source_ref: incomingStadium.source_ref,
     source: SOURCE
   };
 
@@ -188,7 +188,7 @@ const finalizeStadium = (stadium: StadiumRecord): StadiumRecord => {
     capacity: stadium.capacity.trim(),
     latitude: stadium.latitude.trim(),
     longitude: stadium.longitude.trim(),
-    source_id: stadium.source_id.trim(),
+    source_ref: stadium.source_ref.trim(),
     source: SOURCE,
     edited: false
   };

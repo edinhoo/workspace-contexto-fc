@@ -387,7 +387,7 @@ const linkSeasonTournament = (
 ): SeasonRecord => {
   const linkedTournament = tournaments.find(
     (tournament) =>
-      tournament.source_id === season.tournament || tournament.id === season.tournament
+      tournament.source_ref === season.tournament || tournament.id === season.tournament
   );
 
   if (!linkedTournament) {
@@ -453,7 +453,7 @@ const linkPlayerCountry = (player: PlayerRecord, countries: CountryRecord[]): Pl
 
 const linkTeamStadium = (team: TeamRecord, stadiums: StadiumRecord[]): TeamRecord => {
   const linkedStadium = stadiums.find(
-    (stadium) => stadium.source_id === team.stadium || stadium.id === team.stadium
+    (stadium) => stadium.source_ref === team.stadium || stadium.id === team.stadium
   );
 
   if (!linkedStadium) {

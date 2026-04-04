@@ -1,9 +1,20 @@
 import { slugify } from "@repo/utils";
 
 import type { CityRecord, CountryRecord } from "../types.js";
-import { compareEntityIds, createEntityId, loadCsvRows, saveCsvRows } from "./shared/csv.js";
+import {
+  compareEntityIds,
+  createAuditFields,
+  createEntityId,
+  createSourceRef,
+  loadCsvRows,
+  mergeAuditFields,
+  normalizeAuditFields,
+  saveCsvRows,
+  syncCanonicalField
+} from "./shared/csv.js";
 
-const CSV_HEADER = "id;slug;name;short_name;country;source_name;source;edited";
+const CSV_HEADER =
+  "id;slug;name;short_name;country;source_name;source_ref;source;first_scraped_at;last_scraped_at;created_at;updated_at";
 const SOURCE = "sofascore" as const;
 
 export const loadCities = async (filePath: string): Promise<CityRecord[]> => {
@@ -70,8 +81,12 @@ export const saveCities = async (filePath: string, cities: CityRecord[]): Promis
       city.short_name,
       city.country,
       city.source_name,
+      city.source_ref,
       city.source,
-      String(city.edited)
+      city.first_scraped_at,
+      city.last_scraped_at,
+      city.created_at,
+      city.updated_at
     ].join(";")
   );
 
@@ -80,7 +95,6 @@ export const saveCities = async (filePath: string, cities: CityRecord[]): Promis
 
 const normalizeCityRow = (header: string, row: string): CityRecord => {
   const columns = row.split(";");
-
   const [
     id = "",
     slug = "",
@@ -88,22 +102,25 @@ const normalizeCityRow = (header: string, row: string): CityRecord => {
     short_name = "",
     country = "",
     source_name = "",
-    source = SOURCE,
-    edited = "false"
+    legacyOrSourceRef = "",
+    legacyOrSource = SOURCE,
+    tailA = "",
+    tailB = "",
+    tailC = "",
+    tailD = ""
   ] = columns;
 
-  if (header === CSV_HEADER) {
-    return finalizeCity({
-      id,
-      slug,
-      name,
-      short_name,
-      country,
-      source_name,
-      source: source === SOURCE ? SOURCE : SOURCE,
-      edited: edited === "true"
-    });
-  }
+  const isLegacyHeader = header === "id;slug;name;short_name;country;source_name;source;edited";
+  const source_ref = isLegacyHeader ? createSourceRef(source_name || name) : legacyOrSourceRef;
+  const source = isLegacyHeader ? legacyOrSource : legacyOrSource;
+  const audit = isLegacyHeader
+    ? normalizeAuditFields({})
+    : normalizeAuditFields({
+        first_scraped_at: tailA,
+        last_scraped_at: tailB,
+        created_at: tailC,
+        updated_at: tailD
+      });
 
   return finalizeCity({
     id,
@@ -112,8 +129,9 @@ const normalizeCityRow = (header: string, row: string): CityRecord => {
     short_name: short_name || name,
     country,
     source_name: source_name || name,
-    source: SOURCE,
-    edited: edited === "true"
+    source_ref,
+    source: source === SOURCE ? SOURCE : SOURCE,
+    ...audit
   });
 };
 
@@ -125,59 +143,58 @@ const createCity = (city: CityRecord): CityRecord =>
     short_name: city.source_name,
     country: city.country,
     source_name: city.source_name,
+    source_ref: city.source_ref || createSourceRef(city.source_name),
     source: SOURCE,
-    edited: false
+    ...createAuditFields()
   });
 
 const syncCity = (existingCity: CityRecord, incomingCity: CityRecord): CityRecord => {
-  const shouldSyncCanonicalFields =
-    existingCity.name === existingCity.source_name &&
-    existingCity.short_name === existingCity.source_name;
-
-  const updatedSourceCity = {
+  const nextCity = {
     ...existingCity,
+    name: syncCanonicalField(
+      existingCity.name,
+      existingCity.source_name,
+      incomingCity.source_name
+    ),
+    short_name: syncCanonicalField(
+      existingCity.short_name,
+      existingCity.source_name,
+      incomingCity.source_name
+    ),
     country: incomingCity.country,
     source_name: incomingCity.source_name,
+    source_ref: incomingCity.source_ref || existingCity.source_ref,
     source: SOURCE
   };
 
-  if (!shouldSyncCanonicalFields) {
-    return finalizeCity(updatedSourceCity);
-  }
+  const changed =
+    nextCity.name !== existingCity.name ||
+    nextCity.short_name !== existingCity.short_name ||
+    nextCity.country !== existingCity.country ||
+    nextCity.source_name !== existingCity.source_name ||
+    nextCity.source_ref !== existingCity.source_ref;
 
   return finalizeCity({
-    ...updatedSourceCity,
-    name: incomingCity.source_name,
-    short_name: incomingCity.source_name
+    ...nextCity,
+    ...mergeAuditFields(existingCity, changed)
   });
 };
 
 const finalizeCity = (city: CityRecord): CityRecord => {
-  const normalizedId = city.id.trim() || createEntityId();
-  const baseCity = {
-    id: normalizedId,
-    slug: city.slug.trim(),
+  const audit = normalizeAuditFields(city);
+
+  return {
+    id: city.id.trim() || createEntityId(),
+    slug: slugify(city.name.trim() || city.source_name.trim()),
     name: city.name.trim(),
     short_name: city.short_name.trim(),
     country: city.country.trim(),
     source_name: city.source_name.trim(),
+    source_ref: city.source_ref.trim() || createSourceRef(city.source_name),
     source: SOURCE,
-    edited: false
-  };
-  const edited = isEdited(baseCity) || city.edited;
-  const normalizedCity = {
-    ...baseCity,
-    slug: slugify(baseCity.name)
-  };
-
-  return {
-    ...normalizedCity,
-    edited: edited || isEdited(normalizedCity)
+    ...audit
   };
 };
-
-const isEdited = (city: Omit<CityRecord, "edited">): boolean =>
-  city.name !== city.source_name || city.short_name !== city.source_name;
 
 const sortCities = (cities: CityRecord[]): CityRecord[] =>
   [...cities].sort((left, right) => compareEntityIds(left.id, right.id));

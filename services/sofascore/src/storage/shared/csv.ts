@@ -1,6 +1,13 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { ulid } from "ulid";
 
+export type SyncAuditFields = {
+  first_scraped_at: string;
+  last_scraped_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export const loadCsvRows = async (
   filePath: string
 ): Promise<{ header: string | null; rows: string[] }> => {
@@ -40,3 +47,57 @@ export const createEntityId = (): string => ulid();
 
 export const compareEntityIds = (leftId: string, rightId: string): number =>
   leftId.localeCompare(rightId);
+
+export const createTimestamp = (): string => new Date().toISOString();
+
+export const createSourceRef = (
+  ...candidates: Array<string | number | null | undefined>
+): string =>
+  candidates
+    .map((candidate) => String(candidate ?? "").trim())
+    .find((candidate) => candidate.length > 0) ?? "";
+
+export const createAuditFields = (timestamp = createTimestamp()): SyncAuditFields => ({
+  first_scraped_at: timestamp,
+  last_scraped_at: timestamp,
+  created_at: timestamp,
+  updated_at: timestamp
+});
+
+export const normalizeAuditFields = (
+  auditFields: Partial<SyncAuditFields>,
+  fallbackTimestamp = createTimestamp()
+): SyncAuditFields => {
+  const firstScrapedAt = auditFields.first_scraped_at?.trim() || fallbackTimestamp;
+  const createdAt = auditFields.created_at?.trim() || firstScrapedAt;
+  const lastScrapedAt = auditFields.last_scraped_at?.trim() || firstScrapedAt;
+  const updatedAt = auditFields.updated_at?.trim() || createdAt;
+
+  return {
+    first_scraped_at: firstScrapedAt,
+    last_scraped_at: lastScrapedAt,
+    created_at: createdAt,
+    updated_at: updatedAt
+  };
+};
+
+export const mergeAuditFields = (
+  existingFields: Partial<SyncAuditFields>,
+  changed: boolean,
+  timestamp = createTimestamp()
+): SyncAuditFields => {
+  const normalizedExisting = normalizeAuditFields(existingFields, timestamp);
+
+  return {
+    first_scraped_at: normalizedExisting.first_scraped_at,
+    last_scraped_at: timestamp,
+    created_at: normalizedExisting.created_at,
+    updated_at: changed ? timestamp : normalizedExisting.updated_at
+  };
+};
+
+export const syncCanonicalField = (
+  currentValue: string,
+  previousSourceValue: string,
+  incomingSourceValue: string
+): string => (currentValue === previousSourceValue ? incomingSourceValue : currentValue);

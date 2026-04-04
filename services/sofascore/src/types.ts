@@ -1,3 +1,15 @@
+type SyncAuditRecord = {
+  source: "sofascore";
+  source_ref: string;
+  first_scraped_at?: string;
+  last_scraped_at?: string;
+  created_at?: string;
+  updated_at?: string;
+  edited?: boolean;
+  translated?: boolean;
+  sourcetranslated?: boolean;
+};
+
 export type CountryRecord = {
   id: string;
   slug: string;
@@ -8,9 +20,7 @@ export type CountryRecord = {
   source_code2: string;
   source_code3: string;
   source_name: string;
-  source: "sofascore";
-  sourcetranslated: boolean;
-};
+} & SyncAuditRecord;
 
 export type TournamentRecord = {
   id: string;
@@ -20,14 +30,12 @@ export type TournamentRecord = {
   country: string;
   primary_color: string;
   secondary_color: string;
-  source_id: string;
+  source_ref: string;
   source_slug: string;
   source_name: string;
   source_primary_color: string;
   source_secondary_color: string;
-  source: "sofascore";
-  translated: boolean;
-};
+} & SyncAuditRecord;
 
 export type SeasonRecord = {
   id: string;
@@ -36,12 +44,10 @@ export type SeasonRecord = {
   short_name: string;
   year: string;
   tournament: string;
-  source_id: string;
+  source_ref: string;
   source_name: string;
   source_year: string;
-  source: "sofascore";
-  translated: boolean;
-};
+} & SyncAuditRecord;
 
 export type CityRecord = {
   id: string;
@@ -50,9 +56,7 @@ export type CityRecord = {
   short_name: string;
   country: string;
   source_name: string;
-  source: "sofascore";
-  edited: boolean;
-};
+} & SyncAuditRecord;
 
 export type StadiumRecord = {
   id: string;
@@ -63,10 +67,7 @@ export type StadiumRecord = {
   capacity: string;
   latitude: string;
   longitude: string;
-  source_id: string;
-  source: "sofascore";
-  edited: boolean;
-};
+} & SyncAuditRecord;
 
 export type RefereeRecord = {
   id: string;
@@ -74,10 +75,7 @@ export type RefereeRecord = {
   name: string;
   short_name: string;
   country: string;
-  source_id: string;
-  source: "sofascore";
-  edited: boolean;
-};
+} & SyncAuditRecord;
 
 export type ManagerRecord = {
   id: string;
@@ -85,10 +83,7 @@ export type ManagerRecord = {
   name: string;
   short_name: string;
   country: string;
-  source_id: string;
-  source: "sofascore";
-  edited: boolean;
-};
+} & SyncAuditRecord;
 
 export type TeamRecord = {
   id: string;
@@ -102,9 +97,7 @@ export type TeamRecord = {
   primary_color: string;
   secondary_color: string;
   text_color: string;
-  source_id: string;
-  edited: boolean;
-};
+} & SyncAuditRecord;
 
 export type PlayerRecord = {
   id: string;
@@ -117,10 +110,7 @@ export type PlayerRecord = {
   height: string;
   country: string;
   date_of_birth: string;
-  source: "sofascore";
-  source_id: string;
-  edited: boolean;
-};
+} & SyncAuditRecord;
 
 export type MatchRecord = {
   id: string;
@@ -155,10 +145,7 @@ export type MatchRecord = {
   injury_time_2: string;
   injury_time_3: string;
   injury_time_4: string;
-  source_id: string;
-  source: "sofascore";
-  edited: boolean;
-};
+} & SyncAuditRecord;
 
 export type EventRecord = {
   id: string;
@@ -198,10 +185,7 @@ export type EventRecord = {
   goal_mouth_y: string;
   goalkeeper_x: string;
   goalkeeper_y: string;
-  source_id: string;
-  source: "sofascore";
-  edited: boolean;
-};
+} & SyncAuditRecord;
 
 export type LineupRecord = {
   id: string;
@@ -215,10 +199,7 @@ export type LineupRecord = {
   slot: string;
   minutes_played: string;
   rating: string;
-  source_id: string;
-  source: "sofascore";
-  edited: boolean;
-};
+} & SyncAuditRecord;
 
 export type PlayerMatchStatRecord = {
   id: string;
@@ -303,10 +284,7 @@ export type PlayerMatchStatRecord = {
   penalty_won: string;
   penalty_miss: string;
   penalty_save: string;
-  source_id: string;
-  source: "sofascore";
-  edited: boolean;
-};
+} & SyncAuditRecord;
 
 export type TeamMatchStatRecord = {
   id: string;
@@ -390,10 +368,7 @@ export type TeamMatchStatRecord = {
   penalty_won: string;
   penalty_miss: string;
   penalty_save: string;
-  source_id: string;
-  source: "sofascore";
-  edited: boolean;
-};
+} & SyncAuditRecord;
 
 type SofascoreCountry = {
   id: number;

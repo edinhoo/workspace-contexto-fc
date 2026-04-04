@@ -1,10 +1,18 @@
 import { slugify } from "@repo/utils";
 
 import type { CountryRecord, PlayerRecord } from "../types.js";
-import { compareEntityIds, createEntityId, loadCsvRows, saveCsvRows } from "./shared/csv.js";
+import {
+  compareEntityIds,
+  createAuditFields,
+  createEntityId,
+  loadCsvRows,
+  mergeAuditFields,
+  normalizeAuditFields,
+  saveCsvRows
+} from "./shared/csv.js";
 
 const CSV_HEADER =
-  "id;slug;name;short_name;first_name;last_name;position;height;country;date_of_birth;source;source_id;edited";
+  "id;slug;name;short_name;first_name;last_name;position;height;country;date_of_birth;source;source_ref;first_scraped_at;last_scraped_at;created_at;updated_at";
 const SOURCE = "sofascore" as const;
 
 export const loadPlayers = async (filePath: string): Promise<PlayerRecord[]> => {
@@ -25,7 +33,7 @@ export const upsertPlayers = (
 
   for (const incomingPlayer of incomingPlayers) {
     const existingPlayerIndex = players.findIndex(
-      (existingPlayer) => existingPlayer.source_id === incomingPlayer.source_id
+      (existingPlayer) => existingPlayer.source_ref === incomingPlayer.source_ref
     );
 
     if (existingPlayerIndex === -1) {
@@ -77,8 +85,11 @@ export const savePlayers = async (filePath: string, players: PlayerRecord[]): Pr
       player.country,
       player.date_of_birth,
       player.source,
-      player.source_id,
-      String(player.edited)
+      player.source_ref,
+      player.first_scraped_at,
+      player.last_scraped_at,
+      player.created_at,
+      player.updated_at
     ].join(";")
   );
 
@@ -87,7 +98,6 @@ export const savePlayers = async (filePath: string, players: PlayerRecord[]): Pr
 
 const normalizePlayerRow = (header: string, row: string): PlayerRecord => {
   const columns = row.split(";");
-
   const [
     id = "",
     slug = "",
@@ -100,27 +110,23 @@ const normalizePlayerRow = (header: string, row: string): PlayerRecord => {
     country = "",
     date_of_birth = "",
     source = SOURCE,
-    source_id = "",
-    edited = "false"
+    source_ref = "",
+    tailA = "",
+    tailB = "",
+    tailC = "",
+    tailD = ""
   ] = columns;
 
-  if (header === CSV_HEADER) {
-    return finalizePlayer({
-      id,
-      slug,
-      name,
-      short_name,
-      first_name,
-      last_name,
-      position,
-      height,
-      country,
-      date_of_birth,
-      source: source === SOURCE ? SOURCE : SOURCE,
-      source_id,
-      edited: edited === "true"
-    });
-  }
+  const isLegacyHeader =
+    header === "id;slug;name;short_name;first_name;last_name;position;height;country;date_of_birth;source;source_ref;edited";
+  const audit = isLegacyHeader
+    ? normalizeAuditFields({})
+    : normalizeAuditFields({
+        first_scraped_at: tailA,
+        last_scraped_at: tailB,
+        created_at: tailC,
+        updated_at: tailD
+      });
 
   return finalizePlayer({
     id,
@@ -133,9 +139,9 @@ const normalizePlayerRow = (header: string, row: string): PlayerRecord => {
     height,
     country,
     date_of_birth,
-    source: SOURCE,
-    source_id,
-    edited: edited === "true"
+    source: source === SOURCE ? SOURCE : SOURCE,
+    source_ref,
+    ...audit
   });
 };
 
@@ -152,24 +158,13 @@ const createPlayer = (player: PlayerRecord): PlayerRecord =>
     country: player.country,
     date_of_birth: player.date_of_birth,
     source: SOURCE,
-    source_id: player.source_id,
-    edited: false
+    source_ref: player.source_ref,
+    ...createAuditFields()
   });
 
 const syncPlayer = (existingPlayer: PlayerRecord, incomingPlayer: PlayerRecord): PlayerRecord => {
-  const updatedPlayer = {
+  const nextPlayer = {
     ...existingPlayer,
-    country: incomingPlayer.country,
-    source_id: incomingPlayer.source_id,
-    source: SOURCE
-  };
-
-  if (existingPlayer.edited) {
-    return finalizePlayer(updatedPlayer);
-  }
-
-  return finalizePlayer({
-    ...updatedPlayer,
     slug: incomingPlayer.slug,
     name: incomingPlayer.name,
     short_name: incomingPlayer.short_name || incomingPlayer.name,
@@ -177,7 +172,16 @@ const syncPlayer = (existingPlayer: PlayerRecord, incomingPlayer: PlayerRecord):
     last_name: incomingPlayer.last_name,
     position: incomingPlayer.position,
     height: incomingPlayer.height,
-    date_of_birth: incomingPlayer.date_of_birth
+    country: incomingPlayer.country,
+    date_of_birth: incomingPlayer.date_of_birth,
+    source_ref: incomingPlayer.source_ref,
+    source: SOURCE
+  };
+  const changed = JSON.stringify(nextPlayer) !== JSON.stringify({ ...existingPlayer, source: SOURCE });
+
+  return finalizePlayer({
+    ...nextPlayer,
+    ...mergeAuditFields(existingPlayer, changed)
   });
 };
 
@@ -197,8 +201,8 @@ const finalizePlayer = (player: PlayerRecord): PlayerRecord => {
     country: player.country.trim(),
     date_of_birth: player.date_of_birth.trim(),
     source: SOURCE,
-    source_id: player.source_id.trim(),
-    edited: player.edited
+    source_ref: player.source_ref.trim(),
+    ...normalizeAuditFields(player)
   };
 };
 

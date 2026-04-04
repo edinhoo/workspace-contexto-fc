@@ -1,3 +1,3 @@
-id;slug;name;code3;short_name;complete_name;stadium;foundation;primary_color;secondary_color;text_color;source_id;edited
-01KNCJNCK95S6B2E6ZF9KWRNKD;palmeiras;Palmeiras;PAL;Palmeiras;Palmeiras;01KNCJNCK89FW4D262SAEGX2G4;1914-08-26;#339966;#336633;#336633;1963;false
-01KNCJNCK982YY75T6687WNBF6;atletico-mineiro;Atlético Mineiro;CAM;Atlético-MG;Atlético Mineiro;01KNCJNCK8D1G16JC5AV4KKFF3;1908-03-25;#000000;#ffffff;#ffffff;1977;false
+id;slug;name;code3;short_name;complete_name;stadium;foundation;primary_color;secondary_color;text_color;source_ref;source;first_scraped_at;last_scraped_at;created_at;updated_at
+01KNDAWE7Q90VXC95PE58762VS;atletico-mineiro;Atlético Mineiro;CAM;Atlético-MG;Atlético Mineiro;01KNDAWE7PV39HSDT0XY03H3SH;1908-03-25;#000000;#ffffff;#ffffff;1977;sofascore;2026-04-04T22:47:40.535Z;2026-04-04T22:47:40.535Z;2026-04-04T22:47:40.535Z;2026-04-04T22:47:40.535Z
+01KNDAWE7QAGKJY7409MEKWKJC;palmeiras;Palmeiras;PAL;Palmeiras;Palmeiras;01KNDAWE7P0F6WZV3FMQ5MGKA1;1914-08-26;#339966;#336633;#336633;1963;sofascore;2026-04-04T22:47:40.535Z;2026-04-04T22:47:40.535Z;2026-04-04T22:47:40.535Z;2026-04-04T22:47:40.535Z

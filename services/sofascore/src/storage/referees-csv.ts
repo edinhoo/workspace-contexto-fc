@@ -3,7 +3,7 @@ import { slugify } from "@repo/utils";
 import type { CountryRecord, RefereeRecord } from "../types.js";
 import { compareEntityIds, createEntityId, loadCsvRows, saveCsvRows } from "./shared/csv.js";
 
-const CSV_HEADER = "id;slug;name;short_name;country;source_id;source;edited";
+const CSV_HEADER = "id;slug;name;short_name;country;source_ref;source;edited";
 const SOURCE = "sofascore" as const;
 
 export const loadReferees = async (filePath: string): Promise<RefereeRecord[]> => {
@@ -24,7 +24,7 @@ export const upsertReferees = (
 
   for (const incomingReferee of incomingReferees) {
     const existingRefereeIndex = referees.findIndex(
-      (existingReferee) => existingReferee.source_id === incomingReferee.source_id
+      (existingReferee) => existingReferee.source_ref === incomingReferee.source_ref
     );
 
     if (existingRefereeIndex === -1) {
@@ -73,7 +73,7 @@ export const saveReferees = async (
       referee.name,
       referee.short_name,
       referee.country,
-      referee.source_id,
+      referee.source_ref,
       referee.source,
       String(referee.edited)
     ].join(";")
@@ -91,7 +91,7 @@ const normalizeRefereeRow = (header: string, row: string): RefereeRecord => {
     name = "",
     short_name = "",
     country = "",
-    source_id = "",
+    source_ref = "",
     source = SOURCE,
     edited = "false"
   ] = columns;
@@ -103,7 +103,7 @@ const normalizeRefereeRow = (header: string, row: string): RefereeRecord => {
       name,
       short_name,
       country,
-      source_id,
+      source_ref,
       source: source === SOURCE ? SOURCE : SOURCE,
       edited: edited === "true"
     });
@@ -115,7 +115,7 @@ const normalizeRefereeRow = (header: string, row: string): RefereeRecord => {
     name,
     short_name: short_name || name,
     country,
-    source_id,
+    source_ref,
     source: SOURCE,
     edited: edited === "true"
   });
@@ -128,7 +128,7 @@ const createReferee = (referee: RefereeRecord): RefereeRecord =>
     name: referee.name,
     short_name: referee.name,
     country: referee.country,
-    source_id: referee.source_id,
+    source_ref: referee.source_ref,
     source: SOURCE,
     edited: false
   });
@@ -145,7 +145,7 @@ const syncReferee = (
   const updatedReferee = {
     ...existingReferee,
     country: incomingReferee.country,
-    source_id: incomingReferee.source_id,
+    source_ref: incomingReferee.source_ref,
     source: SOURCE
   };
 
@@ -169,7 +169,7 @@ const finalizeReferee = (referee: RefereeRecord): RefereeRecord => {
     name: referee.name.trim(),
     short_name: referee.short_name.trim(),
     country: referee.country.trim(),
-    source_id: referee.source_id.trim(),
+    source_ref: referee.source_ref.trim(),
     source: SOURCE,
     edited: false
   };

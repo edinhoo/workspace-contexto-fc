@@ -7,10 +7,18 @@ import type {
   TeamRecord,
   TournamentRecord
 } from "../types.js";
-import { compareEntityIds, createEntityId, loadCsvRows, saveCsvRows } from "./shared/csv.js";
+import {
+  compareEntityIds,
+  createAuditFields,
+  createEntityId,
+  loadCsvRows,
+  mergeAuditFields,
+  normalizeAuditFields,
+  saveCsvRows
+} from "./shared/csv.js";
 
 const CSV_HEADER =
-  "id;tournament;season;round;stadium;referee;home_team;home_manager;home_formation;home_score_period_1;home_score_period_2;home_score_normaltime;home_score_extra_1;home_score_extra_2;home_score_overtime;home_score_penalties;away_team;away_manager;away_formation;away_score_period_1;away_score_period_2;away_score_normaltime;away_score_extra_1;away_score_extra_2;away_score_overtime;away_score_penalties;start_time;period_start_time;injury_time_1;injury_time_2;injury_time_3;injury_time_4;source_id;source;edited";
+  "id;tournament;season;round;stadium;referee;home_team;home_manager;home_formation;home_score_period_1;home_score_period_2;home_score_normaltime;home_score_extra_1;home_score_extra_2;home_score_overtime;home_score_penalties;away_team;away_manager;away_formation;away_score_period_1;away_score_period_2;away_score_normaltime;away_score_extra_1;away_score_extra_2;away_score_overtime;away_score_penalties;start_time;period_start_time;injury_time_1;injury_time_2;injury_time_3;injury_time_4;source_ref;source;first_scraped_at;last_scraped_at;created_at;updated_at";
 const SOURCE = "sofascore" as const;
 
 export const loadMatches = async (filePath: string): Promise<MatchRecord[]> => {
@@ -20,7 +28,7 @@ export const loadMatches = async (filePath: string): Promise<MatchRecord[]> => {
     return [];
   }
 
-  return sortMatches(rows.map((row) => normalizeMatchRow(row)));
+  return sortMatches(rows.map((row) => normalizeMatchRow(header, row)));
 };
 
 export const upsertMatches = (
@@ -31,7 +39,7 @@ export const upsertMatches = (
 
   for (const incomingMatch of incomingMatches) {
     const existingMatchIndex = matches.findIndex(
-      (existingMatch) => existingMatch.source_id === incomingMatch.source_id
+      (existingMatch) => existingMatch.source_ref === incomingMatch.source_ref
     );
 
     if (existingMatchIndex === -1) {
@@ -60,14 +68,14 @@ export const relinkMatchReferences = (
     matches.map((match) =>
       finalizeMatch({
         ...match,
-        tournament: findReferenceId(references.tournaments, match.tournament, "source_id"),
-        season: findReferenceId(references.seasons, match.season, "source_id"),
-        stadium: findReferenceId(references.stadiums, match.stadium, "source_id"),
-        referee: findReferenceId(references.referees, match.referee, "source_id"),
-        home_team: findReferenceId(references.teams, match.home_team, "source_id"),
-        home_manager: findReferenceId(references.managers, match.home_manager, "source_id"),
-        away_team: findReferenceId(references.teams, match.away_team, "source_id"),
-        away_manager: findReferenceId(references.managers, match.away_manager, "source_id")
+        tournament: findReferenceId(references.tournaments, match.tournament, "source_ref"),
+        season: findReferenceId(references.seasons, match.season, "source_ref"),
+        stadium: findReferenceId(references.stadiums, match.stadium, "source_ref"),
+        referee: findReferenceId(references.referees, match.referee, "source_ref"),
+        home_team: findReferenceId(references.teams, match.home_team, "source_ref"),
+        home_manager: findReferenceId(references.managers, match.home_manager, "source_ref"),
+        away_team: findReferenceId(references.teams, match.away_team, "source_ref"),
+        away_manager: findReferenceId(references.managers, match.away_manager, "source_ref")
       })
     )
   );
@@ -107,21 +115,25 @@ export const saveMatches = async (filePath: string, matches: MatchRecord[]): Pro
       match.injury_time_2,
       match.injury_time_3,
       match.injury_time_4,
-      match.source_id,
+      match.source_ref,
       match.source,
-      String(match.edited)
+      match.first_scraped_at,
+      match.last_scraped_at,
+      match.created_at,
+      match.updated_at
     ].join(";")
   );
 
   await saveCsvRows(filePath, CSV_HEADER, rows);
 };
 
-const normalizeMatchRow = (row: string): MatchRecord => {
+const normalizeMatchRow = (header: string, row: string): MatchRecord => {
   const columns = row.split(";");
 
-  if (
-    columns.length === 33
-  ) {
+  const legacyLength33 = columns.length === 33;
+  const legacyLength35 = columns.length === 35;
+
+  if (legacyLength33 || legacyLength35) {
     const [
       id = "",
       tournament = "",
@@ -131,6 +143,7 @@ const normalizeMatchRow = (row: string): MatchRecord => {
       referee = "",
       home_team = "",
       home_manager = "",
+      maybeHomeFormation = "",
       home_score_period_1 = "",
       home_score_period_2 = "",
       home_score_normaltime = "",
@@ -140,6 +153,7 @@ const normalizeMatchRow = (row: string): MatchRecord => {
       home_score_penalties = "",
       away_team = "",
       away_manager = "",
+      maybeAwayFormation = "",
       away_score_period_1 = "",
       away_score_period_2 = "",
       away_score_normaltime = "",
@@ -153,9 +167,8 @@ const normalizeMatchRow = (row: string): MatchRecord => {
       injury_time_2 = "",
       injury_time_3 = "",
       injury_time_4 = "",
-      source_id = "",
-      source = SOURCE,
-      edited = "false"
+      source_ref = "",
+      legacySource = SOURCE
     ] = columns;
 
     return finalizeMatch({
@@ -167,7 +180,7 @@ const normalizeMatchRow = (row: string): MatchRecord => {
       referee,
       home_team,
       home_manager,
-      home_formation: "",
+      home_formation: legacyLength35 ? maybeHomeFormation : "",
       home_score_period_1,
       home_score_period_2,
       home_score_normaltime,
@@ -177,7 +190,7 @@ const normalizeMatchRow = (row: string): MatchRecord => {
       home_score_penalties,
       away_team,
       away_manager,
-      away_formation: "",
+      away_formation: legacyLength35 ? maybeAwayFormation : "",
       away_score_period_1,
       away_score_period_2,
       away_score_normaltime,
@@ -191,9 +204,9 @@ const normalizeMatchRow = (row: string): MatchRecord => {
       injury_time_2,
       injury_time_3,
       injury_time_4,
-      source_id,
-      source: source === SOURCE ? SOURCE : SOURCE,
-      edited: edited === "true"
+      source_ref,
+      source: legacySource === SOURCE ? SOURCE : SOURCE,
+      ...normalizeAuditFields({})
     });
   }
 
@@ -230,9 +243,12 @@ const normalizeMatchRow = (row: string): MatchRecord => {
     injury_time_2 = "",
     injury_time_3 = "",
     injury_time_4 = "",
-    source_id = "",
+    source_ref = "",
     source = SOURCE,
-    edited = "false"
+    first_scraped_at = "",
+    last_scraped_at = "",
+    created_at = "",
+    updated_at = ""
   ] = columns;
 
   return finalizeMatch({
@@ -268,9 +284,12 @@ const normalizeMatchRow = (row: string): MatchRecord => {
     injury_time_2,
     injury_time_3,
     injury_time_4,
-    source_id,
+    source_ref,
     source: source === SOURCE ? SOURCE : SOURCE,
-    edited: edited === "true"
+    first_scraped_at,
+    last_scraped_at,
+    created_at,
+    updated_at
   });
 };
 
@@ -279,19 +298,11 @@ const createMatch = (match: MatchRecord): MatchRecord =>
     ...match,
     id: createEntityId(),
     source: SOURCE,
-    edited: false
+    ...createAuditFields()
   });
 
 const syncMatch = (existingMatch: MatchRecord, incomingMatch: MatchRecord): MatchRecord => {
-  if (existingMatch.edited) {
-    return finalizeMatch({
-      ...existingMatch,
-      source_id: incomingMatch.source_id,
-      source: SOURCE
-    });
-  }
-
-  return finalizeMatch({
+  const nextMatch = {
     ...existingMatch,
     tournament: incomingMatch.tournament,
     season: incomingMatch.season,
@@ -324,8 +335,14 @@ const syncMatch = (existingMatch: MatchRecord, incomingMatch: MatchRecord): Matc
     injury_time_2: incomingMatch.injury_time_2,
     injury_time_3: incomingMatch.injury_time_3,
     injury_time_4: incomingMatch.injury_time_4,
-    source_id: incomingMatch.source_id,
+    source_ref: incomingMatch.source_ref,
     source: SOURCE
+  };
+  const changed = JSON.stringify(nextMatch) !== JSON.stringify({ ...existingMatch, source: SOURCE });
+
+  return finalizeMatch({
+    ...nextMatch,
+    ...mergeAuditFields(existingMatch, changed)
   });
 };
 
@@ -362,16 +379,14 @@ const finalizeMatch = (match: MatchRecord): MatchRecord => ({
   injury_time_2: match.injury_time_2.trim(),
   injury_time_3: match.injury_time_3.trim(),
   injury_time_4: match.injury_time_4.trim(),
-  source_id: match.source_id.trim(),
+  source_ref: match.source_ref.trim(),
   source: SOURCE,
-  edited: match.edited
+  ...normalizeAuditFields(match)
 });
 
 const findReferenceId = <
-  TRecord extends { id: string },
-  TKey extends {
-    [TProperty in keyof TRecord]: TRecord[TProperty] extends string ? TProperty : never;
-  }[keyof TRecord]
+  TRecord extends { id: string; source_ref: string },
+  TKey extends keyof TRecord
 >(
   records: TRecord[],
   value: string,
