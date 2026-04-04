@@ -115,3 +115,12 @@ import type { Identifier } from "@repo/types";
 - O comando `pnpm scrape:sofascore` executa a entrada inicial do scraper.
 - Os packages compartilhados ja possuem scripts padrao e build independente.
 - O `docker-compose.yml` esta pronto para receber futuros containers sem travar a base atual.
+
+## Documentacao recomendada
+
+Para reduzir releitura de codigo e consumo de contexto em tarefas futuras, consulte primeiro:
+
+- [docs/monorepo-overview.md](/Users/edinhomedeiros/Documents/GitHub/_VIBE%20CODE/WORKSPACES/workspace-contexto-fc/docs/monorepo-overview.md)
+- [services/sofascore/README.md](/Users/edinhomedeiros/Documents/GitHub/_VIBE%20CODE/WORKSPACES/workspace-contexto-fc/services/sofascore/README.md)
+- [services/sofascore/docs/data-model.md](/Users/edinhomedeiros/Documents/GitHub/_VIBE%20CODE/WORKSPACES/workspace-contexto-fc/services/sofascore/docs/data-model.md)
+- [services/sofascore/docs/scraper-decisions.md](/Users/edinhomedeiros/Documents/GitHub/_VIBE%20CODE/WORKSPACES/workspace-contexto-fc/services/sofascore/docs/scraper-decisions.md)
