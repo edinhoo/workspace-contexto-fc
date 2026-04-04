@@ -112,6 +112,12 @@ export type PlayerRecord = {
   date_of_birth: string;
 } & SyncAuditRecord;
 
+export type PlayerCareerTeamRecord = {
+  id: string;
+  player: string;
+  team: string;
+} & SyncAuditRecord;
+
 export type MatchRecord = {
   id: string;
   tournament: string;
@@ -790,6 +796,28 @@ export type SofascoreShotmapResponse = {
   shotmap?: SofascoreShotmapItem[];
 };
 
+export type SofascorePlayerCareerSeason = {
+  startYear?: number;
+  endYear?: number;
+  team?: {
+    id?: number;
+    name?: string;
+    slug?: string;
+    shortName?: string;
+    nameCode?: string;
+    teamColors?: {
+      primary?: string;
+      secondary?: string;
+      text?: string;
+    };
+  };
+};
+
+export type SofascorePlayerCareerResponse = {
+  seasons?: SofascorePlayerCareerSeason[];
+  typesMap?: Record<string, unknown>;
+};
+
 export type EventMetadata = {
   countries: CountryRecord[];
   tournament: TournamentRecord | null;
@@ -813,4 +841,9 @@ export type EventLineupsMetadata = {
 
 export type EventIncidentsMetadata = {
   events: EventRecord[];
+};
+
+export type PlayerCareerMetadata = {
+  teams: TeamRecord[];
+  playerCareerTeams: PlayerCareerTeamRecord[];
 };

@@ -7,9 +7,23 @@ Os CSVs do scraper sao a camada canonica atual de persistencia local.
 Regras gerais:
 
 - `id` e interno ao projeto
-- `source_id` preserva a referencia original do Sofascore
+- `source_ref` preserva a referencia original do Sofascore
+- `source` identifica o provedor do registro
 - relacionamentos finais devem apontar para IDs internos sempre que possivel
 - campos sem informacao ficam em branco
+- os CSVs mais novos usam auditoria com:
+  - `first_scraped_at`
+  - `last_scraped_at`
+  - `created_at`
+  - `updated_at`
+
+## Convencoes de origem
+
+- quando o payload tem ID explicito do Sofascore, ele tende a virar `source_ref`
+- quando nao ha ID explicito:
+  - preferir `slug`
+  - se nao houver `slug`, usar `name`
+- em entidades com colunas `source_*`, o dado canonico pode divergir do bruto da origem quando houver ajuste manual futuro
 
 ## Entidades base
 
@@ -75,25 +89,42 @@ Notas:
 - `is_missing=true` identifica itens vindos de `missingPlayers`
 - `slot` e calculado para titulares com base em `formation + average-positions`
 - o time e definido pelo lado `home/away` do bloco da lineup, nao pelo `teamId` isolado do item
+- esta tabela ainda esta em migracao para o modelo completo de auditoria
 
 ### player-match-stats.csv
 
 - contem estatisticas individuais vindas de `lineups.statistics`
 - uma linha so e criada quando existe objeto `statistics`
 - campos ausentes ficam em branco
+- esta tabela ainda esta em migracao para o modelo completo de auditoria
+
+### player-career-teams.csv
+
+Campos principais:
+
+- `player`
+- `team`
+
+Notas:
+
+- registra apenas a relacao basica entre jogador e clube
+- nao tenta inferir periodo de passagem
+- nasce das relacoes `player + team` observadas durante o scrape, principalmente em `lineups`
+- serve para responder se o atleta ja atuou por um clube
 
 ### team-match-stats.csv
 
 - agregado derivado de `player-match-stats`
 - soma metricas acumulativas
 - faz media em campos de nota e valores normalizados
+- esta tabela ainda esta em migracao para o modelo completo de auditoria
 
 ### events.csv
 
 Schema atual:
 
 ```text
-id;match;sort_order;team;player;related_player;manager;incident_type;incident_class;period;minute;added_time;reversed_period_time;is_home;impact_side;is_confirmed;is_rescinded;reason;description;is_injury;home_score;away_score;length;body_part;goal_type;situation;shot_type;player_x;player_y;pass_end_x;pass_end_y;shot_x;shot_y;goal_mouth_x;goal_mouth_y;goalkeeper_x;goalkeeper_y;source_id;source;edited
+id;match;sort_order;team;player;related_player;manager;incident_type;incident_class;period;minute;added_time;reversed_period_time;is_home;impact_side;is_confirmed;is_rescinded;reason;description;is_injury;home_score;away_score;length;body_part;goal_type;situation;shot_type;player_x;player_y;pass_end_x;pass_end_y;shot_x;shot_y;goal_mouth_x;goal_mouth_y;goalkeeper_x;goalkeeper_y;source_ref;source;...
 ```
 
 Interpretacao:
@@ -123,5 +154,4 @@ Interpretacao:
 ### Period e injuryTime
 
 - alguns incidents nao possuem `id` nativo
-- nesses casos, o scraper cria `source_id` sintetico para nao perder o evento
-
+- nesses casos, o scraper cria `source_ref` sintetico para nao perder o evento

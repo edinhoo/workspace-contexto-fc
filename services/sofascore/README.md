@@ -40,12 +40,21 @@ pnpm --filter @services/sofascore typecheck
 
 ## Endpoints atualmente consumidos
 
-- `/api/v1/event/{eventId}`
-- `/api/v1/event/{eventId}/lineups`
-- `/api/v1/event/{eventId}/average-positions`
-- `/api/v1/event/{eventId}/incidents`
-- `/api/v1/event/{eventId}/shotmap`
-
+- `GET /api/v1/event/{eventId}`
+  - payload base da partida
+  - abastece countries, cities, stadiums, tournaments, seasons, referees, managers, teams, players e matches
+- `GET /api/v1/event/{eventId}/lineups`
+  - lineups, missingPlayers e statistics por jogador
+  - abastece lineups e player-match-stats
+- `GET /api/v1/event/{eventId}/average-positions`
+  - posicoes medias dos jogadores
+  - enriquece o calculo de `slot` em lineups
+- `GET /api/v1/event/{eventId}/incidents`
+  - timeline principal da partida
+  - abastece events com gols, cartoes, substituicoes, VAR, periodos e injuryTime
+- `GET /api/v1/event/{eventId}/shotmap`
+  - enriquecimento de finalizacoes
+  - complementa events com `shot_type`, `situation`, `body_part`, `goal_type` e coordenadas
 ## CSVs atualmente gerados
 
 Metadados:
@@ -65,6 +74,7 @@ Partida:
 
 - `lineups.csv`
 - `player-match-stats.csv`
+- `player-career-teams.csv`
 - `team-match-stats.csv`
 - `events.csv`
 
@@ -74,13 +84,28 @@ Partida:
 2. faz fetch dos metadados da partida
 3. faz fetch de lineups e average positions
 4. faz fetch de incidents e shotmap
-5. faz upsert por `source_id`
-6. relinka referencias para IDs internos
-7. recalcula `team-match-stats` a partir de `player-match-stats`
-8. salva os CSVs normalizados
+5. deriva relacoes jogador-clube observadas no scrape
+6. faz upsert por `source_ref`
+7. relinka referencias para IDs internos
+8. recalcula `team-match-stats` a partir de `player-match-stats`
+9. salva os CSVs normalizados
+
+## Regras de persistencia
+
+- `id` e sempre interno ao projeto
+- `source_ref` preserva a referencia principal da origem
+- `source` identifica o provedor, hoje `sofascore`
+- quando o payload nao traz um ID explicito:
+  - prefira `slug`
+  - se nao houver `slug`, use `name`
+- os CSVs mais novos usam auditoria com:
+  - `first_scraped_at`
+  - `last_scraped_at`
+  - `created_at`
+  - `updated_at`
+- em entidades com colunas `source_*`, o valor canonico so e sobrescrito automaticamente quando ele ainda coincide com o valor bruto anterior da origem
 
 ## Leituras recomendadas
 
 - [docs/data-model.md](/Users/edinhomedeiros/Documents/GitHub/_VIBE%20CODE/WORKSPACES/workspace-contexto-fc/services/sofascore/docs/data-model.md)
 - [docs/scraper-decisions.md](/Users/edinhomedeiros/Documents/GitHub/_VIBE%20CODE/WORKSPACES/workspace-contexto-fc/services/sofascore/docs/scraper-decisions.md)
-

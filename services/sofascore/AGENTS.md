@@ -9,7 +9,9 @@ Antes de abrir muitos arquivos do servico, consulte nesta ordem:
 Regras locais:
 
 - trate `services/sofascore/data/*.csv` como a saida canonica atual do scraper
-- preserve `source_id` em qualquer evolucao de schema
+- preserve `source_ref` em qualquer evolucao de schema
+- antes de mapear um endpoint novo, confirme em `README.md` e nestes docs se ele ja esta descrito
 - sempre que alterar regra de negocio do parser, atualize a documentacao correspondente
+- sempre que alterar schema de CSV, atualize a documentacao correspondente
 - para validar consistencia, prefira cruzar `matches`, `teams`, `players`, `lineups`, `player-match-stats`, `team-match-stats` e `events`
-
+- em historico de clubes de jogadores, prefira derivar a relacao `player + team` dos dados ja coletados no scrape

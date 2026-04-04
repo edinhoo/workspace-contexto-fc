@@ -206,16 +206,19 @@ const createTeam = (team: TeamRecord): TeamRecord =>
 const syncTeam = (existingTeam: TeamRecord, incomingTeam: TeamRecord): TeamRecord => {
   const nextTeam = {
     ...existingTeam,
-    slug: incomingTeam.slug,
-    name: incomingTeam.name,
-    code3: incomingTeam.code3,
-    short_name: incomingTeam.short_name,
-    complete_name: incomingTeam.complete_name,
-    stadium: incomingTeam.stadium,
-    foundation: incomingTeam.foundation,
-    primary_color: incomingTeam.primary_color,
-    secondary_color: incomingTeam.secondary_color,
-    text_color: incomingTeam.text_color,
+    slug: pickIncomingValue(existingTeam.slug, incomingTeam.slug),
+    name: pickIncomingValue(existingTeam.name, incomingTeam.name),
+    code3: pickIncomingValue(existingTeam.code3, incomingTeam.code3),
+    short_name: pickIncomingValue(existingTeam.short_name, incomingTeam.short_name),
+    complete_name: pickIncomingValue(existingTeam.complete_name, incomingTeam.complete_name),
+    stadium: pickIncomingValue(existingTeam.stadium, incomingTeam.stadium),
+    foundation: pickIncomingValue(existingTeam.foundation, incomingTeam.foundation),
+    primary_color: pickIncomingValue(existingTeam.primary_color, incomingTeam.primary_color),
+    secondary_color: pickIncomingValue(
+      existingTeam.secondary_color,
+      incomingTeam.secondary_color
+    ),
+    text_color: pickIncomingValue(existingTeam.text_color, incomingTeam.text_color),
     source_ref: incomingTeam.source_ref,
     source: SOURCE
   };
@@ -244,6 +247,9 @@ const finalizeTeam = (team: TeamRecord): TeamRecord => ({
   source: SOURCE,
   ...normalizeAuditFields(team)
 });
+
+const pickIncomingValue = (currentValue: string, incomingValue: string): string =>
+  incomingValue.trim().length > 0 ? incomingValue : currentValue;
 
 const sortTeams = (teams: TeamRecord[]): TeamRecord[] =>
   [...teams].sort((left, right) => compareEntityIds(left.id, right.id));

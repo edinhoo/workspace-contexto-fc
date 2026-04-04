@@ -68,6 +68,12 @@ import {
   upsertPlayerMatchStats
 } from "./storage/player-match-stats-csv.js";
 import {
+  loadPlayerCareerTeams,
+  relinkPlayerCareerTeamReferences,
+  savePlayerCareerTeams,
+  upsertPlayerCareerTeams
+} from "./storage/player-career-teams-csv.js";
+import {
   loadReferees,
   relinkRefereeCountries,
   saveReferees,
@@ -85,6 +91,7 @@ import type {
   EventRecord,
   ManagerRecord,
   MatchRecord,
+  PlayerCareerTeamRecord,
   PlayerRecord,
   RefereeRecord,
   SeasonRecord,
@@ -102,6 +109,7 @@ const managersCsvPath = resolve(currentDir, "../data/managers.csv");
 const lineupsCsvPath = resolve(currentDir, "../data/lineups.csv");
 const matchesCsvPath = resolve(currentDir, "../data/matches.csv");
 const playerMatchStatsCsvPath = resolve(currentDir, "../data/player-match-stats.csv");
+const playerCareerTeamsCsvPath = resolve(currentDir, "../data/player-career-teams.csv");
 const teamMatchStatsCsvPath = resolve(currentDir, "../data/team-match-stats.csv");
 const refereesCsvPath = resolve(currentDir, "../data/referees.csv");
 const playersCsvPath = resolve(currentDir, "../data/players.csv");
@@ -127,6 +135,7 @@ const run = async (): Promise<void> => {
   const existingLineups = await loadLineups(lineupsCsvPath);
   const existingMatches = await loadMatches(matchesCsvPath);
   const existingPlayerMatchStats = await loadPlayerMatchStats(playerMatchStatsCsvPath);
+  const existingPlayerCareerTeams = await loadPlayerCareerTeams(playerCareerTeamsCsvPath);
   const existingPlayers = await loadPlayers(playersCsvPath);
   const existingReferees = await loadReferees(refereesCsvPath);
   const existingTeams = await loadTeams(teamsCsvPath);
@@ -217,6 +226,7 @@ const run = async (): Promise<void> => {
   );
   const validPlayers = fetchedData.flatMap((entry) => entry?.lineupMetadata.players ?? []);
   const validTeams = fetchedData.flatMap((entry) => entry?.eventMetadata.teams ?? []);
+  const validPlayerCareerTeams = buildPlayerCareerTeamRelationships(validLineups);
 
   const mergedCountries = upsertCountries(existingCountries, validCountries);
   const mergedCities = upsertCities(
@@ -285,12 +295,23 @@ const run = async (): Promise<void> => {
     existingPlayerMatchStats,
     validPlayerMatchStats
   );
+  const mergedPlayerCareerTeams = upsertPlayerCareerTeams(
+    existingPlayerCareerTeams,
+    validPlayerCareerTeams
+  );
   const normalizedPlayerMatchStats = relinkPlayerMatchStatReferences(
     mergedPlayerMatchStats,
     {
       matches: normalizedMatches,
       teams: normalizedTeams,
       players: normalizedPlayers
+    }
+  );
+  const normalizedPlayerCareerTeams = relinkPlayerCareerTeamReferences(
+    mergedPlayerCareerTeams,
+    {
+      players: normalizedPlayers,
+      teams: normalizedTeams
     }
   );
   const normalizedTeamMatchStats = buildTeamMatchStats(normalizedPlayerMatchStats);
@@ -304,6 +325,7 @@ const run = async (): Promise<void> => {
   await saveLineups(lineupsCsvPath, normalizedLineups);
   await saveMatches(matchesCsvPath, normalizedMatches);
   await savePlayerMatchStats(playerMatchStatsCsvPath, normalizedPlayerMatchStats);
+  await savePlayerCareerTeams(playerCareerTeamsCsvPath, normalizedPlayerCareerTeams);
   await saveTeamMatchStats(teamMatchStatsCsvPath, normalizedTeamMatchStats);
   await savePlayers(playersCsvPath, normalizedPlayers);
   await saveReferees(refereesCsvPath, normalizedReferees);
@@ -322,6 +344,9 @@ const run = async (): Promise<void> => {
   console.log(`matches.csv atualizado com ${validMatches.length} item(ns) processado(s).`);
   console.log(
     `player-match-stats.csv atualizado com ${validPlayerMatchStats.length} item(ns) processado(s).`
+  );
+  console.log(
+    `player-career-teams.csv atualizado com ${validPlayerCareerTeams.length} item(ns) processado(s).`
   );
   console.log(
     `team-match-stats.csv atualizado com ${normalizedTeamMatchStats.length} item(ns) processado(s).`
@@ -347,6 +372,39 @@ const linkCityCountry = (city: CityRecord, countries: CountryRecord[]): CityReco
     ...city,
     country: linkedCountry.id
   };
+};
+
+const buildPlayerCareerTeamRelationships = (
+  lineups: Array<{ player: string; team: string }>
+): PlayerCareerTeamRecord[] => {
+  const seen = new Set<string>();
+
+  return lineups.flatMap((lineup) => {
+    const player = lineup.player.trim();
+    const team = lineup.team.trim();
+
+    if (!player || !team) {
+      return [];
+    }
+
+    const sourceRef = `${player}:${team}`;
+
+    if (seen.has(sourceRef)) {
+      return [];
+    }
+
+    seen.add(sourceRef);
+
+    return [
+      {
+        id: "",
+        player,
+        team,
+        source_ref: sourceRef,
+        source: "sofascore"
+      }
+    ];
+  });
 };
 
 const linkTournamentCountry = (

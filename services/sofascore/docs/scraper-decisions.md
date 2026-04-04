@@ -8,8 +8,62 @@ Ele existe para:
 
 - capturar os dados relevantes do Sofascore
 - estruturar a informacao em entidades coerentes
-- preservar rastreabilidade com `source_id`
+- preservar rastreabilidade com `source_ref`
 - permitir validacao manual e evolucao posterior
+
+## Endpoints e papeis
+
+### `/api/v1/event/{eventId}`
+
+- endpoint base da partida
+- dele saem os cadastros e o contexto principal do jogo
+- abastece:
+  - countries
+  - cities
+  - stadiums
+  - tournaments
+  - seasons
+  - referees
+  - managers
+  - teams
+  - players
+  - matches
+
+### `/api/v1/event/{eventId}/lineups`
+
+- traz jogadores relacionados a partida
+- inclui titulares, reservas, missingPlayers e estatisticas individuais
+- abastece:
+  - lineups
+  - player-match-stats
+
+### `/api/v1/event/{eventId}/average-positions`
+
+- complementa lineups com posicao media em campo
+- usado principalmente para calcular `slot`
+
+### `/api/v1/event/{eventId}/incidents`
+
+- timeline principal da partida
+- abastece events com:
+  - goals
+  - cards
+  - substitutions
+  - period
+  - injuryTime
+  - varDecision
+  - inGamePenalty
+
+### `/api/v1/event/{eventId}/shotmap`
+
+- enriquecimento de finalizacoes
+- nao substitui `incidents`
+- complementa events com:
+  - `shot_type`
+  - `situation`
+  - `body_part`
+- `goal_type`
+- coordenadas do lance
 
 ## Regras de modelagem adotadas
 
@@ -83,6 +137,55 @@ Exemplo:
   - `is_home=true`
   - `impact_side=away`
 
+### 9. `source_ref` substitui `source_id`
+
+- a referencia da origem deve ficar em `source_ref`
+- quando nao houver ID explicito, preferir:
+  - `slug`
+  - depois `name`
+
+### 10. auditoria substitui `edited` e `translated` nos CSVs novos
+
+Nos CSVs que ja migraram, usar:
+
+- `first_scraped_at`
+- `last_scraped_at`
+- `created_at`
+- `updated_at`
+
+Esses campos registram:
+
+- primeiro momento em que o registro apareceu
+- ultima vez em que foi visto pelo scraper
+- data de criacao do registro local
+- data da ultima alteracao efetiva do registro local
+
+### 11. campos canonicos com espelho `source_*` nao devem ser sobrescritos cegamente
+
+Regra:
+
+- se o valor canonico atual ainda for igual ao `source_*` anterior
+- e o novo valor da origem for diferente
+- entao o valor canonico pode ser atualizado
+
+Motivo:
+
+- preservar possiveis ajustes manuais futuros sem perder a origem bruta
+
+### 12. historico de clubes do jogador fica reduzido a relacao jogador-clube
+
+Regra:
+
+- o scraper observa as relacoes `player + team` que ja apareceram nos dados coletados
+- a origem principal dessa relacao hoje e `lineups`
+- o scraper nao tenta inferir inicio ou fim de passagem
+- a tabela final guarda apenas se aquele jogador apareceu associado ao clube
+
+Motivo:
+
+- isso evita depender de endpoint adicional
+- a relacao simples jogador-clube e segura e util
+
 ## Regras de consistencia atuais
 
 - `lineups`, `player-match-stats`, `events` e `matches` devem relinkar para IDs internos
@@ -97,6 +200,7 @@ Exemplo:
 - verificar se `events` referencia apenas players e managers validos
 - tratar `ownGoal` como excecao semantica no cruzamento
 - ignorar eventos de comissao nao principal
+- ao migrar schema, preferir rebuild limpo dos CSVs quando o legado atrapalhar a leitura correta
 
 ## Quando atualizar esta documentacao
 
@@ -107,4 +211,3 @@ Atualize estes docs sempre que houver mudanca em:
 - criterio de deduplicacao
 - criterio de enriquecimento por `shotmap`
 - validacao cruzada entre entidades
-
