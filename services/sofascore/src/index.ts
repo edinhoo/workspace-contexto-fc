@@ -18,6 +18,10 @@ import {
   upsertTeams
 } from "./storage/teams-csv.js";
 import {
+  buildTeamMatchStats,
+  saveTeamMatchStats
+} from "./storage/team-match-stats-csv.js";
+import {
   loadTournaments,
   relinkTournamentCountries,
   saveTournaments,
@@ -47,6 +51,12 @@ import {
   savePlayers,
   upsertPlayers
 } from "./storage/players-csv.js";
+import {
+  loadPlayerMatchStats,
+  relinkPlayerMatchStatReferences,
+  savePlayerMatchStats,
+  upsertPlayerMatchStats
+} from "./storage/player-match-stats-csv.js";
 import {
   loadReferees,
   relinkRefereeCountries,
@@ -79,6 +89,8 @@ const stadiumsCsvPath = resolve(currentDir, "../data/stadiums.csv");
 const managersCsvPath = resolve(currentDir, "../data/managers.csv");
 const lineupsCsvPath = resolve(currentDir, "../data/lineups.csv");
 const matchesCsvPath = resolve(currentDir, "../data/matches.csv");
+const playerMatchStatsCsvPath = resolve(currentDir, "../data/player-match-stats.csv");
+const teamMatchStatsCsvPath = resolve(currentDir, "../data/team-match-stats.csv");
 const refereesCsvPath = resolve(currentDir, "../data/referees.csv");
 const playersCsvPath = resolve(currentDir, "../data/players.csv");
 const teamsCsvPath = resolve(currentDir, "../data/teams.csv");
@@ -101,6 +113,7 @@ const run = async (): Promise<void> => {
   const existingManagers = await loadManagers(managersCsvPath);
   const existingLineups = await loadLineups(lineupsCsvPath);
   const existingMatches = await loadMatches(matchesCsvPath);
+  const existingPlayerMatchStats = await loadPlayerMatchStats(playerMatchStatsCsvPath);
   const existingPlayers = await loadPlayers(playersCsvPath);
   const existingReferees = await loadReferees(refereesCsvPath);
   const existingTeams = await loadTeams(teamsCsvPath);
@@ -119,6 +132,7 @@ const run = async (): Promise<void> => {
               countries: [],
               players: [],
               lineups: [],
+              playerMatchStats: [],
               homeFormation: "",
               awayFormation: ""
             };
@@ -130,7 +144,7 @@ const run = async (): Promise<void> => {
           lineupMetadata
         };
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Erro desconhecido";
+        const message = formatErrorMessage(error);
         console.error(`Falha ao processar o evento ${eventId}: ${message}`);
         return null;
       }
@@ -173,6 +187,9 @@ const run = async (): Promise<void> => {
       };
     })
     .filter((match): match is MatchRecord => match !== null);
+  const validPlayerMatchStats = fetchedData.flatMap(
+    (entry) => entry?.lineupMetadata.playerMatchStats ?? []
+  );
   const validPlayers = fetchedData.flatMap((entry) => entry?.lineupMetadata.players ?? []);
   const validTeams = fetchedData.flatMap((entry) => entry?.eventMetadata.teams ?? []);
 
@@ -232,6 +249,19 @@ const run = async (): Promise<void> => {
     teams: normalizedTeams,
     players: normalizedPlayers
   });
+  const mergedPlayerMatchStats = upsertPlayerMatchStats(
+    existingPlayerMatchStats,
+    validPlayerMatchStats
+  );
+  const normalizedPlayerMatchStats = relinkPlayerMatchStatReferences(
+    mergedPlayerMatchStats,
+    {
+      matches: normalizedMatches,
+      teams: normalizedTeams,
+      players: normalizedPlayers
+    }
+  );
+  const normalizedTeamMatchStats = buildTeamMatchStats(normalizedPlayerMatchStats);
 
   await saveCountries(countriesCsvPath, mergedCountries);
   await saveCities(citiesCsvPath, normalizedCities);
@@ -240,6 +270,8 @@ const run = async (): Promise<void> => {
   await saveManagers(managersCsvPath, normalizedManagers);
   await saveLineups(lineupsCsvPath, normalizedLineups);
   await saveMatches(matchesCsvPath, normalizedMatches);
+  await savePlayerMatchStats(playerMatchStatsCsvPath, normalizedPlayerMatchStats);
+  await saveTeamMatchStats(teamMatchStatsCsvPath, normalizedTeamMatchStats);
   await savePlayers(playersCsvPath, normalizedPlayers);
   await saveReferees(refereesCsvPath, normalizedReferees);
   await saveTournaments(tournamentsCsvPath, normalizedTournaments);
@@ -254,6 +286,12 @@ const run = async (): Promise<void> => {
   console.log(`managers.csv atualizado com ${validManagers.length} item(ns) processado(s).`);
   console.log(`lineups.csv atualizado com ${validLineups.length} item(ns) processado(s).`);
   console.log(`matches.csv atualizado com ${validMatches.length} item(ns) processado(s).`);
+  console.log(
+    `player-match-stats.csv atualizado com ${validPlayerMatchStats.length} item(ns) processado(s).`
+  );
+  console.log(
+    `team-match-stats.csv atualizado com ${normalizedTeamMatchStats.length} item(ns) processado(s).`
+  );
   console.log(`players.csv atualizado com ${validPlayers.length} item(ns) processado(s).`);
   console.log(`referees.csv atualizado com ${validReferees.length} item(ns) processado(s).`);
   console.log(
@@ -395,3 +433,55 @@ const linkTeamStadium = (team: TeamRecord, stadiums: StadiumRecord[]): TeamRecor
 };
 
 await run();
+
+function formatErrorMessage(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return "Erro desconhecido";
+  }
+
+  const cause = extractErrorCause(error);
+
+  if (!cause) {
+    return error.message;
+  }
+
+  const details = [cause.code, cause.errno, cause.syscall, cause.hostname]
+    .filter(Boolean)
+    .join(" | ");
+
+  if (!details) {
+    return `${error.message} | causa: ${cause.message}`;
+  }
+
+  return `${error.message} | causa: ${cause.message} | ${details}`;
+}
+
+function extractErrorCause(
+  error: Error
+): {
+  message?: string;
+  code?: string;
+  errno?: number;
+  syscall?: string;
+  hostname?: string;
+} | null {
+  if (!("cause" in error)) {
+    return null;
+  }
+
+  const cause = error.cause;
+
+  if (!cause || typeof cause !== "object") {
+    return null;
+  }
+
+  const typedCause = cause as {
+    message?: string;
+    code?: string;
+    errno?: number;
+    syscall?: string;
+    hostname?: string;
+  };
+
+  return typedCause;
+}

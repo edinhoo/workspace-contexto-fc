@@ -7,9 +7,11 @@ import type {
   LineupRecord,
   ManagerRecord,
   MatchRecord,
+  PlayerMatchStatRecord,
   PlayerRecord,
   RefereeRecord,
   SeasonRecord,
+  SofascoreLineupPlayer,
   SofascoreEventResponse,
   SofascoreLineupsResponse,
   StadiumRecord,
@@ -58,6 +60,12 @@ export const fetchEventMetadataByEventId = async (
     .map((item) => createCountryRecord(item));
 
   countries.push(...teamCountries);
+
+  const managerCountries = [homeTeam?.manager?.country, awayTeam?.manager?.country]
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+    .map((item) => createCountryRecord(item));
+
+  countries.push(...managerCountries);
 
   const tournamentRecord: TournamentRecord | null =
     tournament && uniqueTournament && country
@@ -246,11 +254,26 @@ export const fetchEventLineupsByEventId = async (
       createLineupRecord(eventId, lineupPlayer, awayTeamId, "missing", awayStarterSlots)
     )
   ]);
+  const playerMatchStats = dedupePlayerMatchStats([
+    ...(payload.home?.players ?? []).map((lineupPlayer) =>
+      createPlayerMatchStatRecord(eventId, lineupPlayer, homeTeamId)
+    ),
+    ...(payload.home?.missingPlayers ?? []).map((lineupPlayer) =>
+      createPlayerMatchStatRecord(eventId, lineupPlayer, homeTeamId)
+    ),
+    ...(payload.away?.players ?? []).map((lineupPlayer) =>
+      createPlayerMatchStatRecord(eventId, lineupPlayer, awayTeamId)
+    ),
+    ...(payload.away?.missingPlayers ?? []).map((lineupPlayer) =>
+      createPlayerMatchStatRecord(eventId, lineupPlayer, awayTeamId)
+    )
+  ]);
 
   return {
     countries,
     players,
     lineups,
+    playerMatchStats,
     homeFormation,
     awayFormation
   };
@@ -439,6 +462,110 @@ const createLineupRecord = (
   };
 };
 
+const createPlayerMatchStatRecord = (
+  eventId: string,
+  lineupPlayer: SofascoreLineupPlayer,
+  fallbackTeamId?: number
+): PlayerMatchStatRecord | null => {
+  const playerId = lineupPlayer.player?.id;
+  const teamId = lineupPlayer.teamId ?? fallbackTeamId;
+  const statistics = lineupPlayer.statistics;
+
+  if (!playerId || !teamId || !statistics || Object.keys(statistics).length === 0) {
+    return null;
+  }
+
+  return {
+    id: "",
+    match: eventId,
+    team: String(teamId),
+    player: String(playerId),
+    total_pass: stringifyStat(statistics.totalPass),
+    accurate_pass: stringifyStat(statistics.accuratePass),
+    total_long_balls: stringifyStat(statistics.totalLongBalls),
+    accurate_long_balls: stringifyStat(statistics.accurateLongBalls),
+    goal_assist: stringifyStat(statistics.goalAssist),
+    accurate_own_half_passes: stringifyStat(statistics.accurateOwnHalfPasses),
+    total_own_half_passes: stringifyStat(statistics.totalOwnHalfPasses),
+    accurate_opposition_half_passes: stringifyStat(statistics.accurateOppositionHalfPasses),
+    total_opposition_half_passes: stringifyStat(statistics.totalOppositionHalfPasses),
+    aerial_won: stringifyStat(statistics.aerialWon),
+    duel_won: stringifyStat(statistics.duelWon),
+    total_clearance: stringifyStat(statistics.totalClearance),
+    ball_recovery: stringifyStat(statistics.ballRecovery),
+    was_fouled: stringifyStat(statistics.wasFouled),
+    good_high_claim: stringifyStat(statistics.goodHighClaim),
+    saved_shots_from_inside_the_box: stringifyStat(statistics.savedShotsFromInsideTheBox),
+    saves: stringifyStat(statistics.saves),
+    punches: stringifyStat(statistics.punches),
+    minutes_played: stringifyStat(statistics.minutesPlayed),
+    touches: stringifyStat(statistics.touches),
+    rating: stringifyStat(statistics.rating),
+    possession_lost_ctrl: stringifyStat(statistics.possessionLostCtrl),
+    expected_assists: stringifyStat(statistics.expectedAssists),
+    total_ball_carries_distance: stringifyStat(statistics.totalBallCarriesDistance),
+    ball_carries_count: stringifyStat(statistics.ballCarriesCount),
+    total_progression: stringifyStat(statistics.totalProgression),
+    keeper_save_value: stringifyStat(statistics.keeperSaveValue),
+    rating_version_original: stringifyStat(statistics.ratingVersions?.original),
+    rating_version_alternative: stringifyStat(statistics.ratingVersions?.alternative),
+    total_shots: stringifyStat(statistics.totalShots),
+    goals_prevented: stringifyStat(statistics.goalsPrevented),
+    pass_value_normalized: stringifyStat(statistics.passValueNormalized),
+    dribble_value_normalized: stringifyStat(statistics.dribbleValueNormalized),
+    defensive_value_normalized: stringifyStat(statistics.defensiveValueNormalized),
+    goalkeeper_value_normalized: stringifyStat(statistics.goalkeeperValueNormalized),
+    statistics_type_sport_slug: statistics.statisticsType?.sportSlug?.trim() ?? "",
+    statistics_type_name: statistics.statisticsType?.statisticsType?.trim() ?? "",
+    aerial_lost: stringifyStat(statistics.aerialLost),
+    duel_lost: stringifyStat(statistics.duelLost),
+    total_tackle: stringifyStat(statistics.totalTackle),
+    won_tackle: stringifyStat(statistics.wonTackle),
+    unsuccessful_touch: stringifyStat(statistics.unsuccessfulTouch),
+    fouls: stringifyStat(statistics.fouls),
+    challenge_lost: stringifyStat(statistics.challengeLost),
+    outfielder_block: stringifyStat(statistics.outfielderBlock),
+    best_ball_carry_progression: stringifyStat(statistics.bestBallCarryProgression),
+    total_progressive_ball_carries_distance: stringifyStat(
+      statistics.totalProgressiveBallCarriesDistance
+    ),
+    progressive_ball_carries_count: stringifyStat(statistics.progressiveBallCarriesCount),
+    interception_won: stringifyStat(statistics.interceptionWon),
+    total_cross: stringifyStat(statistics.totalCross),
+    accurate_cross: stringifyStat(statistics.accurateCross),
+    dispossessed: stringifyStat(statistics.dispossessed),
+    big_chance_created: stringifyStat(statistics.bigChanceCreated),
+    shot_off_target: stringifyStat(statistics.shotOffTarget),
+    blocked_scoring_attempt: stringifyStat(statistics.blockedScoringAttempt),
+    total_offside: stringifyStat(statistics.totalOffside),
+    expected_goals: stringifyStat(statistics.expectedGoals),
+    key_pass: stringifyStat(statistics.keyPass),
+    shot_value_normalized: stringifyStat(statistics.shotValueNormalized),
+    total_contest: stringifyStat(statistics.totalContest),
+    won_contest: stringifyStat(statistics.wonContest),
+    on_target_scoring_attempt: stringifyStat(statistics.onTargetScoringAttempt),
+    goals: stringifyStat(statistics.goals),
+    expected_goals_on_target: stringifyStat(statistics.expectedGoalsOnTarget),
+    total_keeper_sweeper: stringifyStat(statistics.totalKeeperSweeper),
+    accurate_keeper_sweeper: stringifyStat(statistics.accurateKeeperSweeper),
+    own_goals: stringifyStat(statistics.ownGoals),
+    big_chance_missed: stringifyStat(statistics.bigChanceMissed),
+    last_man_tackle: stringifyStat(statistics.lastManTackle),
+    hit_woodwork: stringifyStat(statistics.hitWoodwork),
+    error_lead_to_a_shot: stringifyStat(statistics.errorLeadToAShot),
+    clearance_off_line: stringifyStat(statistics.clearanceOffLine),
+    error_lead_to_a_goal: stringifyStat(statistics.errorLeadToAGoal),
+    penalty_conceded: stringifyStat(statistics.penaltyConceded),
+    penalty_faced: stringifyStat(statistics.penaltyFaced),
+    penalty_won: stringifyStat(statistics.penaltyWon),
+    penalty_miss: stringifyStat(statistics.penaltyMiss),
+    penalty_save: stringifyStat(statistics.penaltySave),
+    source_id: `${eventId}:${teamId}:${playerId}`,
+    source: SOURCE,
+    edited: false
+  };
+};
+
 const createMatchRecord = (event: {
   id: number;
   uniqueTournamentId?: number;
@@ -595,6 +722,25 @@ const dedupeLineups = (lineups: Array<LineupRecord | null>): LineupRecord[] => {
   });
 };
 
+const dedupePlayerMatchStats = (
+  stats: Array<PlayerMatchStatRecord | null>
+): PlayerMatchStatRecord[] => {
+  const seen = new Set<string>();
+
+  return stats.filter((stat): stat is PlayerMatchStatRecord => {
+    if (!stat) {
+      return false;
+    }
+
+    if (seen.has(stat.source_id)) {
+      return false;
+    }
+
+    seen.add(stat.source_id);
+    return true;
+  });
+};
+
 const createAveragePositionMap = (
   items: Array<{
     player?: { id?: number };
@@ -721,6 +867,8 @@ const toTimestampString = (timestamp?: number): string =>
 
 const stringifyOptionalNumber = (value?: number): string =>
   value !== undefined ? String(value) : "";
+
+const stringifyStat = (value?: number): string => (value !== undefined ? String(value) : "");
 
 const toDateString = (timestamp?: number): string => {
   if (timestamp === undefined) {
