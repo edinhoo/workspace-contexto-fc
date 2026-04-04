@@ -4,7 +4,7 @@ import type { StadiumRecord, TeamRecord } from "../types.js";
 import { compareEntityIds, createEntityId, loadCsvRows, saveCsvRows } from "./shared/csv.js";
 
 const CSV_HEADER =
-  "id;slug;name;code3;short_name;complete_name;stadium;foundation;primary_color;secondary_color;text_color;edited";
+  "id;slug;name;code3;short_name;complete_name;stadium;foundation;primary_color;secondary_color;text_color;source_id;edited";
 
 export const loadTeams = async (filePath: string): Promise<TeamRecord[]> => {
   const { header, rows } = await loadCsvRows(filePath);
@@ -24,7 +24,9 @@ export const upsertTeams = (
 
   for (const incomingTeam of incomingTeams) {
     const existingTeamIndex = teams.findIndex(
-      (existingTeam) => existingTeam.slug === incomingTeam.slug && existingTeam.name === incomingTeam.name
+      (existingTeam) =>
+        (existingTeam.source_id && existingTeam.source_id === incomingTeam.source_id) ||
+        (existingTeam.slug === incomingTeam.slug && existingTeam.name === incomingTeam.name)
     );
 
     if (existingTeamIndex === -1) {
@@ -73,6 +75,7 @@ export const saveTeams = async (filePath: string, teams: TeamRecord[]): Promise<
       team.primary_color,
       team.secondary_color,
       team.text_color,
+      team.source_id,
       String(team.edited)
     ].join(";")
   );
@@ -82,6 +85,42 @@ export const saveTeams = async (filePath: string, teams: TeamRecord[]): Promise<
 
 const normalizeTeamRow = (header: string, row: string): TeamRecord => {
   const columns = row.split(";");
+
+  if (
+    header ===
+    "id;slug;name;code3;short_name;complete_name;stadium;foundation;primary_color;secondary_color;text_color;edited"
+  ) {
+    const [
+      id = "",
+      slug = "",
+      name = "",
+      code3 = "",
+      short_name = "",
+      complete_name = "",
+      stadium = "",
+      foundation = "",
+      primary_color = "",
+      secondary_color = "",
+      text_color = "",
+      edited = "false"
+    ] = columns;
+
+    return finalizeTeam({
+      id,
+      slug,
+      name,
+      code3,
+      short_name,
+      complete_name,
+      stadium,
+      foundation,
+      primary_color,
+      secondary_color,
+      text_color,
+      source_id: "",
+      edited: edited === "true"
+    });
+  }
 
   const [
     id = "",
@@ -95,6 +134,7 @@ const normalizeTeamRow = (header: string, row: string): TeamRecord => {
     primary_color = "",
     secondary_color = "",
     text_color = "",
+    source_id = "",
     edited = "false"
   ] = columns;
 
@@ -111,6 +151,7 @@ const normalizeTeamRow = (header: string, row: string): TeamRecord => {
       primary_color,
       secondary_color,
       text_color,
+      source_id,
       edited: edited === "true"
     });
   }
@@ -127,6 +168,7 @@ const normalizeTeamRow = (header: string, row: string): TeamRecord => {
     primary_color,
     secondary_color,
     text_color,
+    source_id,
     edited: edited === "true"
   });
 };
@@ -144,6 +186,7 @@ const createTeam = (team: TeamRecord): TeamRecord =>
     primary_color: team.primary_color,
     secondary_color: team.secondary_color,
     text_color: team.text_color,
+    source_id: team.source_id,
     edited: false
   });
 
@@ -151,7 +194,8 @@ const syncTeam = (existingTeam: TeamRecord, incomingTeam: TeamRecord): TeamRecor
   if (existingTeam.edited) {
     return finalizeTeam({
       ...existingTeam,
-      stadium: incomingTeam.stadium
+      stadium: incomingTeam.stadium,
+      source_id: incomingTeam.source_id
     });
   }
 
@@ -166,7 +210,8 @@ const syncTeam = (existingTeam: TeamRecord, incomingTeam: TeamRecord): TeamRecor
     foundation: incomingTeam.foundation,
     primary_color: incomingTeam.primary_color,
     secondary_color: incomingTeam.secondary_color,
-    text_color: incomingTeam.text_color
+    text_color: incomingTeam.text_color,
+    source_id: incomingTeam.source_id
   });
 };
 
@@ -182,6 +227,7 @@ const finalizeTeam = (team: TeamRecord): TeamRecord => ({
   primary_color: team.primary_color.trim(),
   secondary_color: team.secondary_color.trim(),
   text_color: team.text_color.trim(),
+  source_id: team.source_id.trim(),
   edited: team.edited
 });
 

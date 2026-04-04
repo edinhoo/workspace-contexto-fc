@@ -102,6 +102,7 @@ export type TeamRecord = {
   primary_color: string;
   secondary_color: string;
   text_color: string;
+  source_id: string;
   edited: boolean;
 };
 
@@ -118,6 +119,42 @@ export type PlayerRecord = {
   date_of_birth: string;
   source: "sofascore";
   source_id: string;
+  edited: boolean;
+};
+
+export type MatchRecord = {
+  id: string;
+  tournament: string;
+  season: string;
+  round: string;
+  stadium: string;
+  referee: string;
+  home_team: string;
+  home_manager: string;
+  home_score_period_1: string;
+  home_score_period_2: string;
+  home_score_normaltime: string;
+  home_score_extra_1: string;
+  home_score_extra_2: string;
+  home_score_overtime: string;
+  home_score_penalties: string;
+  away_team: string;
+  away_manager: string;
+  away_score_period_1: string;
+  away_score_period_2: string;
+  away_score_normaltime: string;
+  away_score_extra_1: string;
+  away_score_extra_2: string;
+  away_score_overtime: string;
+  away_score_penalties: string;
+  start_time: string;
+  period_start_time: string;
+  injury_time_1: string;
+  injury_time_2: string;
+  injury_time_3: string;
+  injury_time_4: string;
+  source_id: string;
+  source: "sofascore";
   edited: boolean;
 };
 
@@ -231,6 +268,9 @@ type SofascoreEvent = {
     name: string;
     year?: string;
   };
+  roundInfo?: {
+    round?: number;
+  };
   venue?: {
     id?: number;
     slug?: string;
@@ -257,14 +297,42 @@ type SofascoreEvent = {
   referee?: {
     id: number;
     name: string;
-    slug: string;
-    country?: {
-      alpha2?: string;
-      alpha3?: string;
-      name: string;
       slug: string;
-    };
+      country?: {
+        alpha2?: string;
+        alpha3?: string;
+        name: string;
+        slug: string;
+      };
   };
+  homeScore?: {
+    period1?: number;
+    period2?: number;
+    normaltime?: number;
+    extra1?: number;
+    extra2?: number;
+    overtime?: number;
+    penalties?: number;
+  };
+  awayScore?: {
+    period1?: number;
+    period2?: number;
+    normaltime?: number;
+    extra1?: number;
+    extra2?: number;
+    overtime?: number;
+    penalties?: number;
+  };
+  time?: {
+    injuryTime1?: number;
+    injuryTime2?: number;
+    injuryTime3?: number;
+    injuryTime4?: number;
+    currentPeriodStartTimestamp?: number;
+  };
+  id?: number;
+  startTimestamp?: number;
+  currentPeriodStartTimestamp?: number;
 };
 
 export type SofascoreEventResponse = {
@@ -307,6 +375,7 @@ export type EventMetadata = {
   referee: RefereeRecord | null;
   managers: ManagerRecord[];
   teams: TeamRecord[];
+  match: MatchRecord | null;
 };
 
 export type EventLineupsMetadata = {

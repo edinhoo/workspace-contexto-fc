@@ -4,6 +4,7 @@ import type {
   EventLineupsMetadata,
   EventMetadata,
   ManagerRecord,
+  MatchRecord,
   PlayerRecord,
   RefereeRecord,
   SeasonRecord,
@@ -136,6 +137,30 @@ export const fetchEventMetadataByEventId = async (
     .filter((team): team is NonNullable<typeof team> => Boolean(team?.id))
     .map((team) => createTeamRecord(team));
 
+  const match = event?.id
+    ? createMatchRecord({
+        id: event.id,
+        uniqueTournamentId: uniqueTournament?.id,
+        seasonId: season?.id,
+        round: event.roundInfo?.round,
+        venueId: eventVenue?.id,
+        refereeId: referee?.id,
+        homeTeamId: homeTeam?.id,
+        homeManagerId: homeTeam?.manager?.id,
+        homeScore: event.homeScore,
+        awayTeamId: awayTeam?.id,
+        awayManagerId: awayTeam?.manager?.id,
+        awayScore: event.awayScore,
+        startTimestamp: event.startTimestamp,
+        currentPeriodStartTimestamp:
+          event.time?.currentPeriodStartTimestamp ?? event.currentPeriodStartTimestamp,
+        injuryTime1: event.time?.injuryTime1,
+        injuryTime2: event.time?.injuryTime2,
+        injuryTime3: event.time?.injuryTime3,
+        injuryTime4: event.time?.injuryTime4
+      })
+    : null;
+
   return {
     countries: dedupeCountries(countries),
     tournament: tournamentRecord,
@@ -144,7 +169,8 @@ export const fetchEventMetadataByEventId = async (
     stadiums,
     referee: refereeRecord,
     managers,
-    teams
+    teams,
+    match
   };
 };
 
@@ -278,6 +304,7 @@ const createTeamRecord = (team: {
   primary_color: team.teamColors?.primary ?? "",
   secondary_color: team.teamColors?.secondary ?? "",
   text_color: team.teamColors?.text ?? "",
+  source_id: String(team.id),
   edited: false
 });
 
@@ -316,6 +343,77 @@ const createPlayerRecord = (player?: {
     edited: false
   };
 };
+
+const createMatchRecord = (event: {
+  id: number;
+  uniqueTournamentId?: number;
+  seasonId?: number;
+  round?: number;
+  venueId?: number;
+  refereeId?: number;
+  homeTeamId?: number;
+  homeManagerId?: number;
+  homeScore?: {
+    period1?: number;
+    period2?: number;
+    normaltime?: number;
+    extra1?: number;
+    extra2?: number;
+    overtime?: number;
+    penalties?: number;
+  };
+  awayTeamId?: number;
+  awayManagerId?: number;
+  awayScore?: {
+    period1?: number;
+    period2?: number;
+    normaltime?: number;
+    extra1?: number;
+    extra2?: number;
+    overtime?: number;
+    penalties?: number;
+  };
+  startTimestamp?: number;
+  currentPeriodStartTimestamp?: number;
+  injuryTime1?: number;
+  injuryTime2?: number;
+  injuryTime3?: number;
+  injuryTime4?: number;
+}): MatchRecord => ({
+  id: "",
+  tournament: stringifyOptionalNumber(event.uniqueTournamentId),
+  season: stringifyOptionalNumber(event.seasonId),
+  round: stringifyOptionalNumber(event.round),
+  stadium: stringifyOptionalNumber(event.venueId),
+  referee: stringifyOptionalNumber(event.refereeId),
+  home_team: stringifyOptionalNumber(event.homeTeamId),
+  home_manager: stringifyOptionalNumber(event.homeManagerId),
+  home_score_period_1: stringifyOptionalNumber(event.homeScore?.period1),
+  home_score_period_2: stringifyOptionalNumber(event.homeScore?.period2),
+  home_score_normaltime: stringifyOptionalNumber(event.homeScore?.normaltime),
+  home_score_extra_1: stringifyOptionalNumber(event.homeScore?.extra1),
+  home_score_extra_2: stringifyOptionalNumber(event.homeScore?.extra2),
+  home_score_overtime: stringifyOptionalNumber(event.homeScore?.overtime),
+  home_score_penalties: stringifyOptionalNumber(event.homeScore?.penalties),
+  away_team: stringifyOptionalNumber(event.awayTeamId),
+  away_manager: stringifyOptionalNumber(event.awayManagerId),
+  away_score_period_1: stringifyOptionalNumber(event.awayScore?.period1),
+  away_score_period_2: stringifyOptionalNumber(event.awayScore?.period2),
+  away_score_normaltime: stringifyOptionalNumber(event.awayScore?.normaltime),
+  away_score_extra_1: stringifyOptionalNumber(event.awayScore?.extra1),
+  away_score_extra_2: stringifyOptionalNumber(event.awayScore?.extra2),
+  away_score_overtime: stringifyOptionalNumber(event.awayScore?.overtime),
+  away_score_penalties: stringifyOptionalNumber(event.awayScore?.penalties),
+  start_time: toTimestampString(event.startTimestamp),
+  period_start_time: toTimestampString(event.currentPeriodStartTimestamp),
+  injury_time_1: stringifyOptionalNumber(event.injuryTime1),
+  injury_time_2: stringifyOptionalNumber(event.injuryTime2),
+  injury_time_3: stringifyOptionalNumber(event.injuryTime3),
+  injury_time_4: stringifyOptionalNumber(event.injuryTime4),
+  source_id: String(event.id),
+  source: SOURCE,
+  edited: false
+});
 
 const dedupeCountries = (countries: CountryRecord[]): CountryRecord[] => {
   const seen = new Set<string>();
@@ -384,6 +482,12 @@ const dedupePlayers = (players: PlayerRecord[]): PlayerRecord[] => {
 const toFoundationDate = (timestamp?: number): string => {
   return toDateString(timestamp);
 };
+
+const toTimestampString = (timestamp?: number): string =>
+  timestamp !== undefined ? String(timestamp) : "";
+
+const stringifyOptionalNumber = (value?: number): string =>
+  value !== undefined ? String(value) : "";
 
 const toDateString = (timestamp?: number): string => {
   if (timestamp === undefined) {
