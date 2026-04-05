@@ -21,6 +21,7 @@ Veja tambem: `docs/phase-5-plan-scrape-automation.md`
 Veja tambem: `docs/phase-5-automation-states.md`
 Veja tambem: `docs/phase-5-validation-report.md`
 Veja tambem: `docs/phase-5-closeout.md`
+Veja tambem: `docs/phase-6-plan-directus.md`
 
 ## Objetivo
 
@@ -341,25 +342,37 @@ Introduzir o `Directus` sem comprometer o modelo canonico.
 - permissoes por camada
 - tabelas `editorial.*`
 - colecoes operacionais basicas
+- primeiro fluxo real de ajuste manual controlado
 
 ### Tarefas
 
 - subir `Directus` na infra local
-- configurar acesso somente leitura para `raw.*`
-- permitir edicao controlada em partes de `core.*`
+- configurar acesso somente leitura para `raw.*`, `staging.*` e `ops.*`
+- permitir edicao controlada apenas onde houver excecao justificada em `core.*`
 - liberar edicao principal em `editorial.*`
-- validar como overrides impactam `read.*`
+- decidir o primeiro caso real de override/manual
+- validar como overrides impactam `read.*` ou a camada de leitura da API
 
 ### Dependencias
 
 - Fase 4 concluida
-- Fase 2 madura o suficiente para proteger o canonico
+- Fase 5 concluida
 
 ### Criterios de pronto
 
 - o CMS nao escreve onde nao deveria
 - overrides editoriais nao quebram ingestao
 - equipe consegue navegar e ajustar dados com seguranca
+
+### Precisao de escopo
+
+- iniciar com poucos casos editoriais e nao com abertura ampla do banco
+- manter `raw.*`, `staging.*` e `ops.*` fora de edicao
+- usar schema proprio `directus` para as tabelas internas do CMS
+- usar `editorial.*` como caminho principal para novos overrides
+- permitir manutencao manual excepcional apenas de `core.states` na primeira iteracao
+- usar `core.states` como primeiro caso real provado da fase
+- aplicar override em leitura final apenas se houver ganho claro nesta fase
 
 ## Fase 7 - Robustez e escala
 
