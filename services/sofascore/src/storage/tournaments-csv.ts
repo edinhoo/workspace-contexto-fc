@@ -89,8 +89,7 @@ export const saveTournaments = async (
   await saveCsvRows(filePath, CSV_HEADER, rows);
 };
 
-const normalizeTournamentRow = (header: string, row: string): TournamentRecord => {
-  const columns = row.split(";");
+const normalizeTournamentRow = (header: string, row: string[]): TournamentRecord => {
 
   if (
     header ===
@@ -110,7 +109,7 @@ const normalizeTournamentRow = (header: string, row: string): TournamentRecord =
       source_secondary_color = "",
       source = SOURCE,
       translated = "false"
-    ] = columns;
+    ] = row;
 
     return finalizeTournament({
       id,
@@ -145,7 +144,7 @@ const normalizeTournamentRow = (header: string, row: string): TournamentRecord =
     source_secondary_color = "",
     source = SOURCE,
     translated = "false"
-  ] = columns;
+  ] = row;
 
   if (header === CSV_HEADER) {
     return finalizeTournament({

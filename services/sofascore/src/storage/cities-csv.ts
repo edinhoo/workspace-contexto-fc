@@ -93,8 +93,7 @@ export const saveCities = async (filePath: string, cities: CityRecord[]): Promis
   await saveCsvRows(filePath, CSV_HEADER, rows);
 };
 
-const normalizeCityRow = (header: string, row: string): CityRecord => {
-  const columns = row.split(";");
+const normalizeCityRow = (header: string, row: string[]): CityRecord => {
   const [
     id = "",
     slug = "",
@@ -108,7 +107,7 @@ const normalizeCityRow = (header: string, row: string): CityRecord => {
     tailB = "",
     tailC = "",
     tailD = ""
-  ] = columns;
+  ] = row;
 
   const isLegacyHeader = header === "id;slug;name;short_name;country;source_name;source;edited";
   const source_ref = isLegacyHeader ? createSourceRef(source_name || name) : legacyOrSourceRef;

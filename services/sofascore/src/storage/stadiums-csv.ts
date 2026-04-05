@@ -82,8 +82,7 @@ export const saveStadiums = async (
   await saveCsvRows(filePath, CSV_HEADER, rows);
 };
 
-const normalizeStadiumRow = (header: string, row: string): StadiumRecord => {
-  const columns = row.split(";");
+const normalizeStadiumRow = (header: string, row: string[]): StadiumRecord => {
 
   const [
     id = "",
@@ -97,7 +96,7 @@ const normalizeStadiumRow = (header: string, row: string): StadiumRecord => {
     source_ref = "",
     source = SOURCE,
     edited = "false"
-  ] = columns;
+  ] = row;
 
   if (header === CSV_HEADER) {
     return finalizeStadium({

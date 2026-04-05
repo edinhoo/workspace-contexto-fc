@@ -10,7 +10,7 @@ export type SyncAuditFields = {
 
 export const loadCsvRows = async (
   filePath: string
-): Promise<{ header: string | null; rows: string[] }> => {
+): Promise<{ header: string | null; rows: string[][] }> => {
   try {
     const content = await readFile(filePath, "utf8");
     const lines = content
@@ -24,7 +24,7 @@ export const loadCsvRows = async (
 
     return {
       header: lines[0] ?? null,
-      rows: lines.slice(1)
+      rows: lines.slice(1).map(parseCsvRow)
     };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
@@ -101,3 +101,37 @@ export const syncCanonicalField = (
   previousSourceValue: string,
   incomingSourceValue: string
 ): string => (currentValue === previousSourceValue ? incomingSourceValue : currentValue);
+
+const parseCsvRow = (row: string): string[] => {
+  const columns: string[] = [];
+  let currentValue = "";
+  let insideQuotes = false;
+
+  for (let index = 0; index < row.length; index += 1) {
+    const character = row[index];
+    const nextCharacter = row[index + 1];
+
+    if (character === '"') {
+      if (insideQuotes && nextCharacter === '"') {
+        currentValue += '"';
+        index += 1;
+        continue;
+      }
+
+      insideQuotes = !insideQuotes;
+      continue;
+    }
+
+    if (character === ";" && !insideQuotes) {
+      columns.push(currentValue);
+      currentValue = "";
+      continue;
+    }
+
+    currentValue += character;
+  }
+
+  columns.push(currentValue);
+
+  return columns;
+};

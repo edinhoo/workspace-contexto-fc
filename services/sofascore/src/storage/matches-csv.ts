@@ -127,11 +127,9 @@ export const saveMatches = async (filePath: string, matches: MatchRecord[]): Pro
   await saveCsvRows(filePath, CSV_HEADER, rows);
 };
 
-const normalizeMatchRow = (header: string, row: string): MatchRecord => {
-  const columns = row.split(";");
-
-  const legacyLength33 = columns.length === 33;
-  const legacyLength35 = columns.length === 35;
+const normalizeMatchRow = (header: string, row: string[]): MatchRecord => {
+  const legacyLength33 = row.length === 33;
+  const legacyLength35 = row.length === 35;
 
   if (legacyLength33 || legacyLength35) {
     const [
@@ -169,7 +167,7 @@ const normalizeMatchRow = (header: string, row: string): MatchRecord => {
       injury_time_4 = "",
       source_ref = "",
       legacySource = SOURCE
-    ] = columns;
+    ] = row;
 
     return finalizeMatch({
       id,
@@ -249,7 +247,7 @@ const normalizeMatchRow = (header: string, row: string): MatchRecord => {
     last_scraped_at = "",
     created_at = "",
     updated_at = ""
-  ] = columns;
+  ] = row;
 
   return finalizeMatch({
     id,

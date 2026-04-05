@@ -96,8 +96,7 @@ export const saveTeams = async (filePath: string, teams: TeamRecord[]): Promise<
   await saveCsvRows(filePath, CSV_HEADER, rows);
 };
 
-const normalizeTeamRow = (header: string, row: string): TeamRecord => {
-  const columns = row.split(";");
+const normalizeTeamRow = (header: string, row: string[]): TeamRecord => {
 
   if (
     header ===
@@ -115,7 +114,7 @@ const normalizeTeamRow = (header: string, row: string): TeamRecord => {
       primary_color = "",
       secondary_color = "",
       text_color = ""
-    ] = columns;
+    ] = row;
 
     return finalizeTeam({
       id,
@@ -152,7 +151,7 @@ const normalizeTeamRow = (header: string, row: string): TeamRecord => {
     tailB = "",
     tailC = "",
     tailD = ""
-  ] = columns;
+  ] = row;
 
   const isLegacyHeader =
     header ===

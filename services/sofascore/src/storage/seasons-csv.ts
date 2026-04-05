@@ -84,8 +84,7 @@ export const saveSeasons = async (
   await saveCsvRows(filePath, CSV_HEADER, rows);
 };
 
-const normalizeSeasonRow = (header: string, row: string): SeasonRecord => {
-  const columns = row.split(";");
+const normalizeSeasonRow = (header: string, row: string[]): SeasonRecord => {
 
   if (
     header ===
@@ -103,7 +102,7 @@ const normalizeSeasonRow = (header: string, row: string): SeasonRecord => {
       source_year = "",
       source = SOURCE,
       translated = "false"
-    ] = columns;
+    ] = row;
 
     return finalizeSeason({
       id,
@@ -132,7 +131,7 @@ const normalizeSeasonRow = (header: string, row: string): SeasonRecord => {
     source_year = "",
     source = SOURCE,
     translated = "false"
-  ] = columns;
+  ] = row;
 
   if (header === CSV_HEADER) {
     return finalizeSeason({

@@ -24,6 +24,7 @@ Direto no servico:
 ```bash
 pnpm --filter @services/sofascore scrape 15237889
 pnpm --filter @services/sofascore lint
+pnpm --filter @services/sofascore test
 pnpm --filter @services/sofascore typecheck
 ```
 
@@ -96,6 +97,7 @@ Partida:
 - tabelas simples preservam a referencia principal da origem em `source_ref`
 - tabelas relacionais usam colunas explicitas como `source_match_id`, `source_team_id`, `source_player_id` e `source_incident_id`
 - `source` identifica o provedor, hoje `sofascore`
+- a camada de storage faz parse de CSV respeitando valores entre aspas, incluindo `;` e aspas escapadas dentro da coluna
 - quando o payload nao traz um ID explicito:
   - prefira `slug`
   - se nao houver `slug`, use `name`
@@ -105,6 +107,12 @@ Partida:
   - `created_at`
   - `updated_at`
 - em entidades com colunas `source_*`, o valor canonico so e sobrescrito automaticamente quando ele ainda coincide com o valor bruto anterior da origem
+
+## Testes atuais
+
+- existe cobertura inicial para `src/storage/shared/csv.ts`
+- os testes validam round-trip basico, arquivo ausente e parsing de campos com `;` dentro de aspas
+- o objetivo dessa cobertura e proteger a leitura dos CSVs sem alterar a semantica atual de campos vazios
 
 ## Leituras recomendadas
 

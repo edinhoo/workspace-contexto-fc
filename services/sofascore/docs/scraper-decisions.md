@@ -190,6 +190,20 @@ Motivo:
 - isso evita depender de endpoint adicional
 - a relacao simples jogador-clube e segura e util
 
+### 13. leitura de CSV precisa respeitar delimitadores dentro de aspas
+
+Regra:
+
+- a camada de storage nao deve depender de `split(";")` puro para ler linhas
+- valores entre aspas podem conter `;`
+- aspas escapadas dentro da mesma coluna devem ser preservadas
+
+Motivo:
+
+- evita corrupcao silenciosa no carregamento
+- permite evoluir CSVs com textos mais livres sem quebrar colunas vizinhas
+- melhora a seguranca do round-trip sem mudar o schema atual
+
 ## Regras de consistencia atuais
 
 - `lineups`, `player-match-stats`, `events` e `matches` devem relinkar para IDs internos
@@ -211,6 +225,7 @@ Motivo:
 Atualize estes docs sempre que houver mudanca em:
 
 - schema de CSV
+- estrategia de leitura e escrita dos CSVs
 - regra de relink
 - criterio de deduplicacao
 - criterio de enriquecimento por `shotmap`

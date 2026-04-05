@@ -96,8 +96,7 @@ export const savePlayers = async (filePath: string, players: PlayerRecord[]): Pr
   await saveCsvRows(filePath, CSV_HEADER, rows);
 };
 
-const normalizePlayerRow = (header: string, row: string): PlayerRecord => {
-  const columns = row.split(";");
+const normalizePlayerRow = (header: string, row: string[]): PlayerRecord => {
   const [
     id = "",
     slug = "",
@@ -115,7 +114,7 @@ const normalizePlayerRow = (header: string, row: string): PlayerRecord => {
     tailB = "",
     tailC = "",
     tailD = ""
-  ] = columns;
+  ] = row;
 
   const isLegacyHeader =
     header === "id;slug;name;short_name;first_name;last_name;position;height;country;date_of_birth;source;source_ref;edited";

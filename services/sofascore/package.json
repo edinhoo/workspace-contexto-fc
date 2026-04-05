@@ -13,7 +13,7 @@
     "dev": "tsc -p tsconfig.build.json --watch",
     "scrape": "pnpm run build > /dev/null 2>&1 && node dist/index.js",
     "lint": "eslint src --ext .ts",
-    "test": "node --test",
+    "test": "pnpm --filter @repo/utils build > /dev/null 2>&1 && tsc -p tsconfig.test.json && node --test 'dist/__tests__/**/*.test.js'",
     "typecheck": "pnpm --filter @repo/utils build > /dev/null 2>&1 && tsc -p tsconfig.build.json --noEmit"
   }
 }

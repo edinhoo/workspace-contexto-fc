@@ -76,11 +76,9 @@ export const saveCountries = async (
   await saveCsvRows(filePath, CSV_HEADER, rows);
 };
 
-const normalizeCountryRow = (header: string, row: string): CountryRecord => {
-  const columns = row.split(";");
-
+const normalizeCountryRow = (header: string, row: string[]): CountryRecord => {
   if (header === "id;name;slug") {
-    const [id = "", name = "", slug = ""] = columns;
+    const [id = "", name = "", slug = ""] = row;
 
     return finalizeCountry({
       id,
@@ -98,7 +96,7 @@ const normalizeCountryRow = (header: string, row: string): CountryRecord => {
   }
 
   if (header === "id;slug;name;source") {
-    const [id = "", slug = "", name = ""] = columns;
+    const [id = "", slug = "", name = ""] = row;
 
     return finalizeCountry({
       id,
@@ -131,7 +129,7 @@ const normalizeCountryRow = (header: string, row: string): CountryRecord => {
     legacyTailB = "",
     legacyTailC = "",
     legacyTailD = ""
-  ] = columns;
+  ] = row;
 
   const isLegacyHeader =
     header ===

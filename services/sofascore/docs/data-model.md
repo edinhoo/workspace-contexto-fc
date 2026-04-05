@@ -12,6 +12,7 @@ Regras gerais:
 - `source` identifica o provedor do registro
 - relacionamentos finais devem apontar para IDs internos sempre que possivel
 - campos sem informacao ficam em branco
+- a leitura dos CSVs deve preservar colunas quoted com `;` literal e aspas escapadas
 - os CSVs mais novos usam auditoria com:
   - `first_scraped_at`
   - `last_scraped_at`

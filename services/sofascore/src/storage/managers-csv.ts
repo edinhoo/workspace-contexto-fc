@@ -88,8 +88,7 @@ export const saveManagers = async (filePath: string, managers: ManagerRecord[]):
   await saveCsvRows(filePath, CSV_HEADER, rows);
 };
 
-const normalizeManagerRow = (header: string, row: string): ManagerRecord => {
-  const columns = row.split(";");
+const normalizeManagerRow = (header: string, row: string[]): ManagerRecord => {
   const [
     id = "",
     slug = "",
@@ -102,7 +101,7 @@ const normalizeManagerRow = (header: string, row: string): ManagerRecord => {
     tailB = "",
     tailC = "",
     tailD = ""
-  ] = columns;
+  ] = row;
 
   const isLegacyHeader = header === "id;slug;name;short_name;country;source_ref;source;edited";
   const audit = isLegacyHeader

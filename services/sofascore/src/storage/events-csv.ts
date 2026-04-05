@@ -155,8 +155,7 @@ export const saveEvents = async (filePath: string, events: EventRecord[]): Promi
   await saveCsvRows(filePath, CSV_HEADER, rows);
 };
 
-const normalizeEventRow = (header: string, row: string): EventRecord => {
-  const columns = row.split(";");
+const normalizeEventRow = (header: string, row: string[]): EventRecord => {
   const [
     id = "",
     match = "",
@@ -199,7 +198,7 @@ const normalizeEventRow = (header: string, row: string): EventRecord => {
     legacyOrSourceIncidentId = "",
     source = SOURCE,
     edited = "false"
-  ] = columns;
+  ] = row;
 
   const isLegacyHeader = header.includes("source_ref;source;edited");
   const [source_match_id, source_incident_id] = isLegacyHeader

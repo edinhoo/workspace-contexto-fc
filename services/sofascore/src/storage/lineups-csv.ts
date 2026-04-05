@@ -90,9 +90,7 @@ export const saveLineups = async (filePath: string, lineups: LineupRecord[]): Pr
   await saveCsvRows(filePath, CSV_HEADER, rows);
 };
 
-const normalizeLineupRow = (header: string, row: string): LineupRecord => {
-  const columns = row.split(";");
-
+const normalizeLineupRow = (header: string, row: string[]): LineupRecord => {
   if (header === LEGACY_HEADER_WITH_SHIRT_NUMBER) {
     const [
       id = "",
@@ -111,7 +109,7 @@ const normalizeLineupRow = (header: string, row: string): LineupRecord => {
       source_ref = "",
       source = SOURCE,
       edited = "false"
-    ] = columns;
+    ] = row;
 
     const [source_match_id = "", source_team_id = "", source_player_id = ""] =
       parseLegacyCompositeSourceRef(source_ref);
@@ -153,7 +151,7 @@ const normalizeLineupRow = (header: string, row: string): LineupRecord => {
       source_ref = "",
       source = SOURCE,
       edited = "false"
-    ] = columns;
+    ] = row;
 
     const [source_match_id = "", source_team_id = "", source_player_id = ""] =
       parseLegacyCompositeSourceRef(source_ref);
@@ -193,7 +191,7 @@ const normalizeLineupRow = (header: string, row: string): LineupRecord => {
       source_ref = "",
       source = SOURCE,
       edited = "false"
-    ] = columns;
+    ] = row;
 
     const [source_match_id = "", source_team_id = "", source_player_id = ""] =
       parseLegacyCompositeSourceRef(source_ref);
@@ -235,7 +233,7 @@ const normalizeLineupRow = (header: string, row: string): LineupRecord => {
     source_player_id = "",
     source = SOURCE,
     edited = "false"
-  ] = columns;
+  ] = row;
 
   return finalizeLineup({
     id,

@@ -101,10 +101,8 @@ export const savePlayerCareerTeams = async (
 
 const normalizePlayerCareerTeamRow = (
   header: string,
-  row: string
+  row: string[]
 ): PlayerCareerTeamRecord => {
-  const columns = row.split(";");
-
   if (header === LEGACY_HEADER) {
     const [
       id = "",
@@ -116,7 +114,7 @@ const normalizePlayerCareerTeamRow = (
       tailB = "",
       tailC = "",
       tailD = ""
-    ] = columns;
+    ] = row;
 
     const [source_player_id = "", source_team_id = ""] = source_ref.split(":");
     const audit = normalizeAuditFields({
@@ -148,7 +146,7 @@ const normalizePlayerCareerTeamRow = (
     tailB = "",
     tailC = "",
     tailD = ""
-  ] = columns;
+  ] = row;
 
   const audit = normalizeAuditFields({
     first_scraped_at: tailA,

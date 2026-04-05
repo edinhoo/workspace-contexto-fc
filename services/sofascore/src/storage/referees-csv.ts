@@ -82,8 +82,7 @@ export const saveReferees = async (
   await saveCsvRows(filePath, CSV_HEADER, rows);
 };
 
-const normalizeRefereeRow = (header: string, row: string): RefereeRecord => {
-  const columns = row.split(";");
+const normalizeRefereeRow = (header: string, row: string[]): RefereeRecord => {
 
   const [
     id = "",
@@ -94,7 +93,7 @@ const normalizeRefereeRow = (header: string, row: string): RefereeRecord => {
     source_ref = "",
     source = SOURCE,
     edited = "false"
-  ] = columns;
+  ] = row;
 
   if (header === CSV_HEADER) {
     return finalizeReferee({

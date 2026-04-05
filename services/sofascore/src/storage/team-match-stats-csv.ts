@@ -226,8 +226,7 @@ export const saveTeamMatchStats = async (
   await saveCsvRows(filePath, CSV_HEADER, rows);
 };
 
-const normalizeTeamMatchStatRow = (header: string, row: string): TeamMatchStatRecord => {
-  const columns = row.split(";");
+const normalizeTeamMatchStatRow = (header: string, row: string[]): TeamMatchStatRecord => {
   const [
     id = "",
     match = "",
@@ -314,7 +313,7 @@ const normalizeTeamMatchStatRow = (header: string, row: string): TeamMatchStatRe
     legacyOrSourceTeamId = "",
     source = SOURCE,
     edited = "false"
-  ] = columns;
+  ] = row;
 
   const isLegacyHeader = header.includes("source_ref;source;edited");
   const [source_match_id, source_team_id] = isLegacyHeader
