@@ -17,6 +17,10 @@ Veja tambem: `docs/phase-3-closeout.md`
 Veja tambem: `docs/phase-4-plan-data-api.md`
 Veja tambem: `docs/phase-4-closeout.md`
 Veja tambem: `docs/phase-4-validation-report.md`
+Veja tambem: `docs/phase-5-plan-scrape-automation.md`
+Veja tambem: `docs/phase-5-automation-states.md`
+Veja tambem: `docs/phase-5-validation-report.md`
+Veja tambem: `docs/phase-5-closeout.md`
 
 ## Objetivo
 
@@ -269,12 +273,17 @@ Concluida.
 
 Automatizar a coleta por partida sem mudar o metodo de ingestao.
 
+### Status
+
+Concluida.
+
 ### Entregaveis
 
-- tabela `planned_matches`
-- tabela `scheduled_scrapes`
+- `ops.planned_matches`
+- `ops.scheduled_scrapes`
 - fluxo de cadastro de partidas futuras
-- scheduler ou worker de execucao
+- scheduler ou worker serial de execucao
+- vinculo entre automacao e `ops.ingestion_runs`
 
 ### Tarefas
 
@@ -282,17 +291,43 @@ Automatizar a coleta por partida sem mudar o metodo de ingestao.
 - gerar passes agendados a partir de `scheduled_at`
 - disparar o mesmo metodo de ingestao usado pelo CLI
 - registrar execucoes automaticas em `ingestion_runs`
+- preencher `scheduled_scrapes.run_id` e `planned_matches.core_match_id`
 - tratar retries, falhas e estados pendentes
+- manter a execucao automatica em modo serial na primeira iteracao
 
 ### Dependencias
 
 - Fase 3 concluida
+- Fase 4 concluida
 
 ### Criterios de pronto
 
 - partidas futuras podem ser cadastradas e gerar scrapes automaticamente
 - cada execucao fica auditavel
 - automacao nao contorna staging nem validacoes
+- um passe executado pelo scheduler deixa rastro claro por `planned_match_id`, `scheduled_scrape_id` e `run_id`
+
+### Precisao de escopo
+
+- comecar com cadastro operacional via CLI ou script
+- manter tres passes fixos por partida na primeira iteracao
+- usar offsets fixos `+2h30`, `+3h` e `+3h30`
+- manter o scheduler em modo serial, sem concorrencia entre lotes
+- permitir ate `2` retries automaticos apenas para falhas operacionais
+- falhas bloqueantes de validacao vao direto para `failed`
+- remarcacao de partida cancela scrapes futuros pendentes e regenera a agenda
+- adiar batching por janela de tempo para a Fase 7
+- nao introduzir UI, `Directus` ou logica live nesta fase
+
+### Resultado consolidado
+
+- `ops.planned_matches` e `ops.scheduled_scrapes` materializados
+- agenda automatica de tres passes por partida implementada
+- scheduler serial validado com o mesmo pipeline do scraper manual
+- `planned_match_id -> scheduled_scrape_id -> run_id` confirmado na pratica
+- primeiro run automatico com `251` insercoes
+- runs seguintes sem duplicidade no canônico
+- cancelamento e rerun manual validados
 
 ## Fase 6 - CMS e edicao operacional
 

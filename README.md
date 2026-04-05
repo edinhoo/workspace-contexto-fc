@@ -59,6 +59,17 @@ pnpm db:validate:phase1
 pnpm docker:down
 ```
 
+Para a Fase 5 da automacao da ingestao:
+
+```bash
+pnpm docker:up
+pnpm db:migrate
+pnpm db:plan-match:phase5 -- --event-id=15237889 --scheduled-at=2026-01-28T16:00:00-03:00
+pnpm db:run-scheduler:phase5
+pnpm db:run-scheduler:phase5 -- --drain
+pnpm docker:down
+```
+
 3. Scripts utilitarios equivalentes:
 
 ```bash
