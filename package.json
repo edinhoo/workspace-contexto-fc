@@ -22,6 +22,7 @@
     "db:migrate": "node scripts/db/migrate.mjs",
     "db:bootstrap:phase1": "node scripts/db/bootstrap-phase1.mjs",
     "db:ingest:phase2": "node scripts/db/ingest-phase2.mjs",
+    "db:plan-match:phase5": "node scripts/db/automation/plan-match.mjs",
     "db:validate:phase1": "node scripts/db/validate-phase1.mjs",
     "db:validate:phase2": "node scripts/db/validate-phase2.mjs"
   },
