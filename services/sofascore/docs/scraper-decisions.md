@@ -139,7 +139,8 @@ Exemplo:
 
 ### 9. `source_ref` substitui `source_id`
 
-- a referencia da origem deve ficar em `source_ref`
+- entidades simples usam `source_ref`
+- tabelas relacionais usam colunas explicitas `source_*_id`
 - quando nao houver ID explicito, preferir:
   - `slug`
   - depois `name`
@@ -180,6 +181,9 @@ Regra:
 - a origem principal dessa relacao hoje e `lineups`
 - o scraper nao tenta inferir inicio ou fim de passagem
 - a tabela final guarda apenas se aquele jogador apareceu associado ao clube
+- para essa tabela, os ids brutos ficam em colunas explicitas:
+  - `source_player_id`
+  - `source_team_id`
 
 Motivo:
 

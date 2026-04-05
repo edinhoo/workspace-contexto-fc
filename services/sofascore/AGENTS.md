@@ -9,7 +9,7 @@ Antes de abrir muitos arquivos do servico, consulte nesta ordem:
 Regras locais:
 
 - trate `services/sofascore/data/*.csv` como a saida canonica atual do scraper
-- preserve `source_ref` em qualquer evolucao de schema
+- preserve a referencia da origem, usando `source_ref` em entidades simples e `source_*_id` em tabelas relacionais
 - antes de mapear um endpoint novo, confirme em `README.md` e nestes docs se ele ja esta descrito
 - sempre que alterar regra de negocio do parser, atualize a documentacao correspondente
 - sempre que alterar schema de CSV, atualize a documentacao correspondente

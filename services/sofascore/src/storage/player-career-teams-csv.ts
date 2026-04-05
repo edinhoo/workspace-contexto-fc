@@ -10,8 +10,9 @@ import {
 } from "./shared/csv.js";
 
 const CSV_HEADER =
-  "id;player;team;source_ref;source;first_scraped_at;last_scraped_at;created_at;updated_at";
+  "id;player;team;source_player_id;source_team_id;source;first_scraped_at;last_scraped_at;created_at;updated_at";
 const SOURCE = "sofascore" as const;
+const LEGACY_HEADER = "id;player;team;source_ref;source;first_scraped_at;last_scraped_at;created_at;updated_at";
 
 export const loadPlayerCareerTeams = async (
   filePath: string
@@ -33,7 +34,9 @@ export const upsertPlayerCareerTeams = (
 
   for (const incomingRecord of incomingRecords) {
     const existingRecordIndex = records.findIndex(
-      (existingRecord) => existingRecord.source_ref === incomingRecord.source_ref
+      (existingRecord) =>
+        existingRecord.source_player_id === incomingRecord.source_player_id &&
+        existingRecord.source_team_id === incomingRecord.source_team_id
     );
 
     if (existingRecordIndex === -1) {
@@ -83,7 +86,8 @@ export const savePlayerCareerTeams = async (
       record.id,
       record.player,
       record.team,
-      record.source_ref,
+      record.source_player_id,
+      record.source_team_id,
       record.source,
       record.first_scraped_at,
       record.last_scraped_at,
@@ -100,11 +104,45 @@ const normalizePlayerCareerTeamRow = (
   row: string
 ): PlayerCareerTeamRecord => {
   const columns = row.split(";");
+
+  if (header === LEGACY_HEADER) {
+    const [
+      id = "",
+      player = "",
+      team = "",
+      source_ref = "",
+      source = SOURCE,
+      tailA = "",
+      tailB = "",
+      tailC = "",
+      tailD = ""
+    ] = columns;
+
+    const [source_player_id = "", source_team_id = ""] = source_ref.split(":");
+    const audit = normalizeAuditFields({
+      first_scraped_at: tailA,
+      last_scraped_at: tailB,
+      created_at: tailC,
+      updated_at: tailD
+    });
+
+    return finalizePlayerCareerTeam({
+      id,
+      player,
+      team,
+      source_player_id,
+      source_team_id,
+      source: source === SOURCE ? SOURCE : SOURCE,
+      ...audit
+    });
+  }
+
   const [
     id = "",
     player = "",
     team = "",
-    source_ref = "",
+    source_player_id = "",
+    source_team_id = "",
     source = SOURCE,
     tailA = "",
     tailB = "",
@@ -123,7 +161,8 @@ const normalizePlayerCareerTeamRow = (
     id,
     player,
     team,
-    source_ref,
+    source_player_id,
+    source_team_id,
     source: header.includes("source") && source === SOURCE ? SOURCE : SOURCE,
     ...audit
   });
@@ -134,7 +173,8 @@ const createPlayerCareerTeam = (record: PlayerCareerTeamRecord): PlayerCareerTea
     id: createEntityId(),
     player: record.player,
     team: record.team,
-    source_ref: record.source_ref,
+    source_player_id: record.source_player_id,
+    source_team_id: record.source_team_id,
     source: SOURCE,
     ...createAuditFields()
   });
@@ -147,7 +187,8 @@ const syncPlayerCareerTeam = (
     ...existingRecord,
     player: incomingRecord.player,
     team: incomingRecord.team,
-    source_ref: incomingRecord.source_ref,
+    source_player_id: incomingRecord.source_player_id,
+    source_team_id: incomingRecord.source_team_id,
     source: SOURCE
   };
   const changed = JSON.stringify(nextRecord) !== JSON.stringify({ ...existingRecord, source: SOURCE });
@@ -164,7 +205,8 @@ const finalizePlayerCareerTeam = (
   id: record.id.trim() || createEntityId(),
   player: record.player.trim(),
   team: record.team.trim(),
-  source_ref: record.source_ref.trim(),
+  source_player_id: record.source_player_id.trim(),
+  source_team_id: record.source_team_id.trim(),
   source: SOURCE,
   ...normalizeAuditFields(record)
 });

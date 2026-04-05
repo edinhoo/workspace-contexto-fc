@@ -2,7 +2,7 @@ import type { LineupRecord, MatchRecord, PlayerRecord, TeamRecord } from "../typ
 import { compareEntityIds, createEntityId, loadCsvRows, saveCsvRows } from "./shared/csv.js";
 
 const CSV_HEADER =
-  "id;match;team;player;jersey_number;position;substitute;is_missing;slot;minutes_played;rating;source_ref;source;edited";
+  "id;match;team;player;jersey_number;position;substitute;is_missing;slot;minutes_played;rating;source_match_id;source_team_id;source_player_id;source;edited";
 const SOURCE = "sofascore" as const;
 const LEGACY_HEADER_WITH_SHIRT_NUMBER =
   "id;match;team;player;shirt_number;jersey_number;position;substitute;entry_type;reason;external_type;minutes_played;rating;source_ref;source;edited";
@@ -29,7 +29,10 @@ export const upsertLineups = (
 
   for (const incomingLineup of incomingLineups) {
     const existingLineupIndex = lineups.findIndex(
-      (existingLineup) => existingLineup.source_ref === incomingLineup.source_ref
+      (existingLineup) =>
+        existingLineup.source_match_id === incomingLineup.source_match_id &&
+        existingLineup.source_team_id === incomingLineup.source_team_id &&
+        existingLineup.source_player_id === incomingLineup.source_player_id
     );
 
     if (existingLineupIndex === -1) {
@@ -76,7 +79,9 @@ export const saveLineups = async (filePath: string, lineups: LineupRecord[]): Pr
       lineup.slot,
       lineup.minutes_played,
       lineup.rating,
-      lineup.source_ref,
+      lineup.source_match_id,
+      lineup.source_team_id,
+      lineup.source_player_id,
       lineup.source,
       String(lineup.edited)
     ].join(";")
@@ -108,6 +113,9 @@ const normalizeLineupRow = (header: string, row: string): LineupRecord => {
       edited = "false"
     ] = columns;
 
+    const [source_match_id = "", source_team_id = "", source_player_id = ""] =
+      parseLegacyCompositeSourceRef(source_ref);
+
     return finalizeLineup({
       id,
       match,
@@ -120,7 +128,9 @@ const normalizeLineupRow = (header: string, row: string): LineupRecord => {
       slot: "",
       minutes_played,
       rating,
-      source_ref,
+      source_match_id,
+      source_team_id,
+      source_player_id,
       source: source === SOURCE ? SOURCE : SOURCE,
       edited: edited === "true"
     });
@@ -145,6 +155,9 @@ const normalizeLineupRow = (header: string, row: string): LineupRecord => {
       edited = "false"
     ] = columns;
 
+    const [source_match_id = "", source_team_id = "", source_player_id = ""] =
+      parseLegacyCompositeSourceRef(source_ref);
+
     return finalizeLineup({
       id,
       match,
@@ -157,7 +170,9 @@ const normalizeLineupRow = (header: string, row: string): LineupRecord => {
       slot: "",
       minutes_played,
       rating,
-      source_ref,
+      source_match_id,
+      source_team_id,
+      source_player_id,
       source: source === SOURCE ? SOURCE : SOURCE,
       edited: edited === "true"
     });
@@ -180,6 +195,9 @@ const normalizeLineupRow = (header: string, row: string): LineupRecord => {
       edited = "false"
     ] = columns;
 
+    const [source_match_id = "", source_team_id = "", source_player_id = ""] =
+      parseLegacyCompositeSourceRef(source_ref);
+
     return finalizeLineup({
       id,
       match,
@@ -192,7 +210,9 @@ const normalizeLineupRow = (header: string, row: string): LineupRecord => {
       slot: "",
       minutes_played,
       rating,
-      source_ref,
+      source_match_id,
+      source_team_id,
+      source_player_id,
       source: source === SOURCE ? SOURCE : SOURCE,
       edited: edited === "true"
     });
@@ -210,7 +230,9 @@ const normalizeLineupRow = (header: string, row: string): LineupRecord => {
     slot = "",
     minutes_played = "",
     rating = "",
-    source_ref = "",
+    source_match_id = "",
+    source_team_id = "",
+    source_player_id = "",
     source = SOURCE,
     edited = "false"
   ] = columns;
@@ -227,7 +249,9 @@ const normalizeLineupRow = (header: string, row: string): LineupRecord => {
     slot,
     minutes_played,
     rating,
-    source_ref,
+    source_match_id,
+    source_team_id,
+    source_player_id,
     source: source === SOURCE ? SOURCE : SOURCE,
     edited: edited === "true"
   });
@@ -245,7 +269,9 @@ const syncLineup = (existingLineup: LineupRecord, incomingLineup: LineupRecord):
   if (existingLineup.edited) {
     return finalizeLineup({
       ...existingLineup,
-      source_ref: incomingLineup.source_ref,
+      source_match_id: incomingLineup.source_match_id,
+      source_team_id: incomingLineup.source_team_id,
+      source_player_id: incomingLineup.source_player_id,
       source: SOURCE
     });
   }
@@ -262,7 +288,9 @@ const syncLineup = (existingLineup: LineupRecord, incomingLineup: LineupRecord):
     slot: incomingLineup.slot,
     minutes_played: incomingLineup.minutes_played,
     rating: incomingLineup.rating,
-    source_ref: incomingLineup.source_ref,
+    source_match_id: incomingLineup.source_match_id,
+    source_team_id: incomingLineup.source_team_id,
+    source_player_id: incomingLineup.source_player_id,
     source: SOURCE
   });
 };
@@ -279,10 +307,17 @@ const finalizeLineup = (lineup: LineupRecord): LineupRecord => ({
   slot: lineup.slot.trim(),
   minutes_played: lineup.minutes_played.trim(),
   rating: lineup.rating.trim(),
-  source_ref: lineup.source_ref.trim(),
+  source_match_id: lineup.source_match_id.trim(),
+  source_team_id: lineup.source_team_id.trim(),
+  source_player_id: lineup.source_player_id.trim(),
   source: SOURCE,
   edited: lineup.edited
 });
+
+const parseLegacyCompositeSourceRef = (value: string): [string, string, string] => {
+  const [source_match_id = "", source_team_id = "", source_player_id = ""] = value.split(":");
+  return [source_match_id, source_team_id, source_player_id];
+};
 
 const findReferenceId = <
   TRecord extends { id: string },

@@ -388,7 +388,6 @@ const buildPlayerCareerTeamRelationships = (
     }
 
     const sourceRef = `${player}:${team}`;
-
     if (seen.has(sourceRef)) {
       return [];
     }
@@ -400,7 +399,8 @@ const buildPlayerCareerTeamRelationships = (
         id: "",
         player,
         team,
-        source_ref: sourceRef,
+        source_player_id: player,
+        source_team_id: team,
         source: "sofascore"
       }
     ];

@@ -85,7 +85,7 @@ Partida:
 3. faz fetch de lineups e average positions
 4. faz fetch de incidents e shotmap
 5. deriva relacoes jogador-clube observadas no scrape
-6. faz upsert por `source_ref`
+6. faz upsert pela chave de origem mais estavel de cada tabela
 7. relinka referencias para IDs internos
 8. recalcula `team-match-stats` a partir de `player-match-stats`
 9. salva os CSVs normalizados
@@ -93,7 +93,8 @@ Partida:
 ## Regras de persistencia
 
 - `id` e sempre interno ao projeto
-- `source_ref` preserva a referencia principal da origem
+- tabelas simples preservam a referencia principal da origem em `source_ref`
+- tabelas relacionais usam colunas explicitas como `source_match_id`, `source_team_id`, `source_player_id` e `source_incident_id`
 - `source` identifica o provedor, hoje `sofascore`
 - quando o payload nao traz um ID explicito:
   - prefira `slug`

@@ -8,7 +8,7 @@ import type {
 import { compareEntityIds, createEntityId, loadCsvRows, saveCsvRows } from "./shared/csv.js";
 
 const CSV_HEADER =
-  "id;match;sort_order;team;player;related_player;manager;incident_type;incident_class;period;minute;added_time;reversed_period_time;is_home;impact_side;is_confirmed;is_rescinded;reason;description;is_injury;home_score;away_score;length;body_part;goal_type;situation;shot_type;player_x;player_y;pass_end_x;pass_end_y;shot_x;shot_y;goal_mouth_x;goal_mouth_y;goalkeeper_x;goalkeeper_y;source_ref;source;edited";
+  "id;match;sort_order;team;player;related_player;manager;incident_type;incident_class;period;minute;added_time;reversed_period_time;is_home;impact_side;is_confirmed;is_rescinded;reason;description;is_injury;home_score;away_score;length;body_part;goal_type;situation;shot_type;player_x;player_y;pass_end_x;pass_end_y;shot_x;shot_y;goal_mouth_x;goal_mouth_y;goalkeeper_x;goalkeeper_y;source_match_id;source_incident_id;source;edited";
 const SOURCE = "sofascore" as const;
 
 export const loadEvents = async (filePath: string): Promise<EventRecord[]> => {
@@ -18,7 +18,7 @@ export const loadEvents = async (filePath: string): Promise<EventRecord[]> => {
     return [];
   }
 
-  return sortEvents(rows.map((row) => normalizeEventRow(row)));
+  return sortEvents(rows.map((row) => normalizeEventRow(header, row)));
 };
 
 export const upsertEvents = (
@@ -29,7 +29,9 @@ export const upsertEvents = (
 
   for (const incomingEvent of incomingEvents) {
     const existingEventIndex = events.findIndex(
-      (existingEvent) => existingEvent.source_ref === incomingEvent.source_ref
+      (existingEvent) =>
+        existingEvent.source_match_id === incomingEvent.source_match_id &&
+        existingEvent.source_incident_id === incomingEvent.source_incident_id
     );
 
     if (existingEventIndex === -1) {
@@ -143,7 +145,8 @@ export const saveEvents = async (filePath: string, events: EventRecord[]): Promi
       event.goal_mouth_y,
       event.goalkeeper_x,
       event.goalkeeper_y,
-      event.source_ref,
+      event.source_match_id,
+      event.source_incident_id,
       event.source,
       String(event.edited)
     ].join(";")
@@ -152,7 +155,7 @@ export const saveEvents = async (filePath: string, events: EventRecord[]): Promi
   await saveCsvRows(filePath, CSV_HEADER, rows);
 };
 
-const normalizeEventRow = (row: string): EventRecord => {
+const normalizeEventRow = (header: string, row: string): EventRecord => {
   const columns = row.split(";");
   const [
     id = "",
@@ -192,10 +195,16 @@ const normalizeEventRow = (row: string): EventRecord => {
     goal_mouth_y = "",
     goalkeeper_x = "",
     goalkeeper_y = "",
-    source_ref = "",
+    legacyOrSourceMatchId = "",
+    legacyOrSourceIncidentId = "",
     source = SOURCE,
     edited = "false"
   ] = columns;
+
+  const isLegacyHeader = header.includes("source_ref;source;edited");
+  const [source_match_id, source_incident_id] = isLegacyHeader
+    ? [inferLegacySourceMatchId(match), legacyOrSourceMatchId]
+    : [legacyOrSourceMatchId, legacyOrSourceIncidentId];
 
   return finalizeEvent({
     id,
@@ -235,7 +244,8 @@ const normalizeEventRow = (row: string): EventRecord => {
     goal_mouth_y,
     goalkeeper_x,
     goalkeeper_y,
-    source_ref,
+    source_match_id,
+    source_incident_id,
     source: source === SOURCE ? SOURCE : SOURCE,
     edited: edited === "true"
   });
@@ -253,7 +263,8 @@ const syncEvent = (existingEvent: EventRecord, incomingEvent: EventRecord): Even
   if (existingEvent.edited) {
     return finalizeEvent({
       ...existingEvent,
-      source_ref: incomingEvent.source_ref,
+      source_match_id: incomingEvent.source_match_id,
+      source_incident_id: incomingEvent.source_incident_id,
       source: SOURCE
     });
   }
@@ -296,7 +307,8 @@ const syncEvent = (existingEvent: EventRecord, incomingEvent: EventRecord): Even
     goal_mouth_y: incomingEvent.goal_mouth_y,
     goalkeeper_x: incomingEvent.goalkeeper_x,
     goalkeeper_y: incomingEvent.goalkeeper_y,
-    source_ref: incomingEvent.source_ref,
+    source_match_id: incomingEvent.source_match_id,
+    source_incident_id: incomingEvent.source_incident_id,
     source: SOURCE
   });
 };
@@ -339,7 +351,8 @@ const finalizeEvent = (event: EventRecord): EventRecord => ({
   goal_mouth_y: event.goal_mouth_y.trim(),
   goalkeeper_x: event.goalkeeper_x.trim(),
   goalkeeper_y: event.goalkeeper_y.trim(),
-  source_ref: event.source_ref.trim(),
+  source_match_id: event.source_match_id.trim(),
+  source_incident_id: event.source_incident_id.trim(),
   source: SOURCE,
   edited: event.edited
 });
@@ -377,3 +390,6 @@ const sortEvents = (events: EventRecord[]): EventRecord[] =>
 
     return compareEntityIds(left.id, right.id);
   });
+
+const inferLegacySourceMatchId = (value: string): string =>
+  /^\d+$/.test(value.trim()) ? value.trim() : "";

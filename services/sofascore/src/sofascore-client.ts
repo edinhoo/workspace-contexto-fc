@@ -498,7 +498,9 @@ const createLineupRecord = (
       lineupPlayer.statistics?.rating !== undefined
         ? String(lineupPlayer.statistics.rating)
         : "",
-    source_ref: `${eventId}:${canonicalTeamId}:${playerId}`,
+    source_match_id: eventId,
+    source_team_id: String(canonicalTeamId),
+    source_player_id: String(playerId),
     source: SOURCE,
     edited: false
   };
@@ -602,7 +604,9 @@ const createPlayerMatchStatRecord = (
     penalty_won: stringifyStat(statistics.penaltyWon),
     penalty_miss: stringifyStat(statistics.penaltyMiss),
     penalty_save: stringifyStat(statistics.penaltySave),
-    source_ref: `${eventId}:${teamId}:${playerId}`,
+    source_match_id: eventId,
+    source_team_id: String(teamId),
+    source_player_id: String(playerId),
     source: SOURCE,
     edited: false
   };
@@ -755,11 +759,13 @@ const dedupeLineups = (lineups: Array<LineupRecord | null>): LineupRecord[] => {
       return false;
     }
 
-    if (seen.has(lineup.source_ref)) {
+    const dedupeKey = `${lineup.source_match_id}::${lineup.source_team_id}::${lineup.source_player_id}`;
+
+    if (seen.has(dedupeKey)) {
       return false;
     }
 
-    seen.add(lineup.source_ref);
+    seen.add(dedupeKey);
     return true;
   });
 };
@@ -774,11 +780,13 @@ const dedupePlayerMatchStats = (
       return false;
     }
 
-    if (seen.has(stat.source_ref)) {
+    const dedupeKey = `${stat.source_match_id}::${stat.source_team_id}::${stat.source_player_id}`;
+
+    if (seen.has(dedupeKey)) {
       return false;
     }
 
-    seen.add(stat.source_ref);
+    seen.add(dedupeKey);
     return true;
   });
 };
@@ -791,11 +799,13 @@ const dedupeEvents = (events: Array<EventRecord | null>): EventRecord[] => {
       return false;
     }
 
-    if (seen.has(event.source_ref)) {
+    const dedupeKey = `${event.source_match_id}::${event.source_incident_id}`;
+
+    if (seen.has(dedupeKey)) {
       return false;
     }
 
-    seen.add(event.source_ref);
+    seen.add(dedupeKey);
     return true;
   });
 };
@@ -874,7 +884,8 @@ const createEventRecord = (
     ),
     goalkeeper_x: stringifyOptionalNumber(passingContext.goalkeeper_x),
     goalkeeper_y: stringifyOptionalNumber(passingContext.goalkeeper_y),
-    source_ref: sourceId,
+    source_match_id: eventId,
+    source_incident_id: sourceId,
     source: SOURCE,
     edited: false
   };
@@ -908,8 +919,15 @@ const buildIncidentSourceId = (
     String(index + 1)
   ];
 
-  return parts.join(":");
+  return `synthetic-${parts.map(sanitizeSyntheticSourcePart).join("-")}`;
 };
+
+const sanitizeSyntheticSourcePart = (value: string): string =>
+  value
+    .trim()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-zA-Z0-9_-]/g, "")
+    .slice(0, 64);
 
 const findMatchingShot = (
   incident: SofascoreIncident,

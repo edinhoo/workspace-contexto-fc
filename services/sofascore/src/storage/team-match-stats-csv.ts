@@ -2,7 +2,7 @@ import type { PlayerMatchStatRecord, TeamMatchStatRecord } from "../types.js";
 import { compareEntityIds, createEntityId, loadCsvRows, saveCsvRows } from "./shared/csv.js";
 
 const CSV_HEADER =
-  "id;match;team;total_pass;accurate_pass;total_long_balls;accurate_long_balls;goal_assist;accurate_own_half_passes;total_own_half_passes;accurate_opposition_half_passes;total_opposition_half_passes;aerial_won;duel_won;total_clearance;ball_recovery;was_fouled;good_high_claim;saved_shots_from_inside_the_box;saves;punches;minutes_played;touches;rating;possession_lost_ctrl;expected_assists;total_ball_carries_distance;ball_carries_count;total_progression;keeper_save_value;rating_version_original;rating_version_alternative;total_shots;goals_prevented;pass_value_normalized;dribble_value_normalized;defensive_value_normalized;goalkeeper_value_normalized;statistics_type_sport_slug;statistics_type_name;aerial_lost;duel_lost;total_tackle;won_tackle;unsuccessful_touch;fouls;challenge_lost;outfielder_block;best_ball_carry_progression;total_progressive_ball_carries_distance;progressive_ball_carries_count;interception_won;total_cross;accurate_cross;dispossessed;big_chance_created;shot_off_target;blocked_scoring_attempt;total_offside;expected_goals;key_pass;shot_value_normalized;total_contest;won_contest;on_target_scoring_attempt;goals;expected_goals_on_target;total_keeper_sweeper;accurate_keeper_sweeper;own_goals;big_chance_missed;last_man_tackle;hit_woodwork;error_lead_to_a_shot;clearance_off_line;error_lead_to_a_goal;penalty_conceded;penalty_faced;penalty_won;penalty_miss;penalty_save;source_ref;source;edited";
+  "id;match;team;total_pass;accurate_pass;total_long_balls;accurate_long_balls;goal_assist;accurate_own_half_passes;total_own_half_passes;accurate_opposition_half_passes;total_opposition_half_passes;aerial_won;duel_won;total_clearance;ball_recovery;was_fouled;good_high_claim;saved_shots_from_inside_the_box;saves;punches;minutes_played;touches;rating;possession_lost_ctrl;expected_assists;total_ball_carries_distance;ball_carries_count;total_progression;keeper_save_value;rating_version_original;rating_version_alternative;total_shots;goals_prevented;pass_value_normalized;dribble_value_normalized;defensive_value_normalized;goalkeeper_value_normalized;statistics_type_sport_slug;statistics_type_name;aerial_lost;duel_lost;total_tackle;won_tackle;unsuccessful_touch;fouls;challenge_lost;outfielder_block;best_ball_carry_progression;total_progressive_ball_carries_distance;progressive_ball_carries_count;interception_won;total_cross;accurate_cross;dispossessed;big_chance_created;shot_off_target;blocked_scoring_attempt;total_offside;expected_goals;key_pass;shot_value_normalized;total_contest;won_contest;on_target_scoring_attempt;goals;expected_goals_on_target;total_keeper_sweeper;accurate_keeper_sweeper;own_goals;big_chance_missed;last_man_tackle;hit_woodwork;error_lead_to_a_shot;clearance_off_line;error_lead_to_a_goal;penalty_conceded;penalty_faced;penalty_won;penalty_miss;penalty_save;source_match_id;source_team_id;source;edited";
 const SOURCE = "sofascore" as const;
 
 const SUM_FIELDS = [
@@ -126,7 +126,7 @@ export const loadTeamMatchStats = async (
     return [];
   }
 
-  return sortTeamMatchStats(rows.map((row) => normalizeTeamMatchStatRow(row)));
+  return sortTeamMatchStats(rows.map((row) => normalizeTeamMatchStatRow(header, row)));
 };
 
 export const saveTeamMatchStats = async (
@@ -216,7 +216,8 @@ export const saveTeamMatchStats = async (
       stat.penalty_won,
       stat.penalty_miss,
       stat.penalty_save,
-      stat.source_ref,
+      stat.source_match_id,
+      stat.source_team_id,
       stat.source,
       String(stat.edited)
     ].join(";")
@@ -225,7 +226,7 @@ export const saveTeamMatchStats = async (
   await saveCsvRows(filePath, CSV_HEADER, rows);
 };
 
-const normalizeTeamMatchStatRow = (row: string): TeamMatchStatRecord => {
+const normalizeTeamMatchStatRow = (header: string, row: string): TeamMatchStatRecord => {
   const columns = row.split(";");
   const [
     id = "",
@@ -309,10 +310,16 @@ const normalizeTeamMatchStatRow = (row: string): TeamMatchStatRecord => {
     penalty_won = "",
     penalty_miss = "",
     penalty_save = "",
-    source_ref = "",
+    legacyOrSourceMatchId = "",
+    legacyOrSourceTeamId = "",
     source = SOURCE,
     edited = "false"
   ] = columns;
+
+  const isLegacyHeader = header.includes("source_ref;source;edited");
+  const [source_match_id, source_team_id] = isLegacyHeader
+    ? parseLegacyCompositeSourceRef(legacyOrSourceMatchId)
+    : [legacyOrSourceMatchId, legacyOrSourceTeamId];
 
   return finalizeTeamMatchStat({
     id,
@@ -396,7 +403,8 @@ const normalizeTeamMatchStatRow = (row: string): TeamMatchStatRecord => {
     penalty_won,
     penalty_miss,
     penalty_save,
-    source_ref,
+    source_match_id,
+    source_team_id,
     source: source === SOURCE ? SOURCE : SOURCE,
     edited: edited === "true"
   });
@@ -486,7 +494,8 @@ const createEmptyTeamMatchStat = (
   penalty_won: "",
   penalty_miss: "",
   penalty_save: "",
-  source_ref: `${playerStat.match}:${playerStat.team}`,
+  source_match_id: playerStat.source_match_id,
+  source_team_id: playerStat.source_team_id,
   source: SOURCE,
   edited: false
 });
@@ -635,10 +644,16 @@ const finalizeTeamMatchStat = (
   penalty_won: stat.penalty_won.trim(),
   penalty_miss: stat.penalty_miss.trim(),
   penalty_save: stat.penalty_save.trim(),
-  source_ref: stat.source_ref.trim(),
+  source_match_id: stat.source_match_id.trim(),
+  source_team_id: stat.source_team_id.trim(),
   source: SOURCE,
   edited: stat.edited
 });
+
+const parseLegacyCompositeSourceRef = (value: string): [string, string] => {
+  const [source_match_id = "", source_team_id = ""] = value.split(":");
+  return [source_match_id, source_team_id];
+};
 
 const sortTeamMatchStats = (stats: TeamMatchStatRecord[]): TeamMatchStatRecord[] =>
   [...stats].sort((left, right) => compareEntityIds(left.id, right.id));

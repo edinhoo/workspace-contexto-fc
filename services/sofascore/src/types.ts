@@ -116,7 +116,14 @@ export type PlayerCareerTeamRecord = {
   id: string;
   player: string;
   team: string;
-} & SyncAuditRecord;
+  source_player_id: string;
+  source_team_id: string;
+  source: "sofascore";
+  first_scraped_at?: string;
+  last_scraped_at?: string;
+  created_at?: string;
+  updated_at?: string;
+};
 
 export type MatchRecord = {
   id: string;
@@ -191,7 +198,11 @@ export type EventRecord = {
   goal_mouth_y: string;
   goalkeeper_x: string;
   goalkeeper_y: string;
-} & SyncAuditRecord;
+  source_match_id: string;
+  source_incident_id: string;
+  source: "sofascore";
+  edited?: boolean;
+};
 
 export type LineupRecord = {
   id: string;
@@ -205,7 +216,12 @@ export type LineupRecord = {
   slot: string;
   minutes_played: string;
   rating: string;
-} & SyncAuditRecord;
+  source_match_id: string;
+  source_team_id: string;
+  source_player_id: string;
+  source: "sofascore";
+  edited?: boolean;
+};
 
 export type PlayerMatchStatRecord = {
   id: string;
@@ -290,7 +306,12 @@ export type PlayerMatchStatRecord = {
   penalty_won: string;
   penalty_miss: string;
   penalty_save: string;
-} & SyncAuditRecord;
+  source_match_id: string;
+  source_team_id: string;
+  source_player_id: string;
+  source: "sofascore";
+  edited?: boolean;
+};
 
 export type TeamMatchStatRecord = {
   id: string;
@@ -374,7 +395,11 @@ export type TeamMatchStatRecord = {
   penalty_won: string;
   penalty_miss: string;
   penalty_save: string;
-} & SyncAuditRecord;
+  source_match_id: string;
+  source_team_id: string;
+  source: "sofascore";
+  edited?: boolean;
+};
 
 type SofascoreCountry = {
   id: number;
