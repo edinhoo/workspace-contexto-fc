@@ -121,6 +121,7 @@ import type { Identifier } from "@repo/types";
 Para reduzir releitura de codigo e consumo de contexto em tarefas futuras, consulte primeiro:
 
 - [docs/monorepo-overview.md](/Users/edinhomedeiros/Documents/GitHub/_VIBE%20CODE/WORKSPACES/workspace-contexto-fc/docs/monorepo-overview.md)
+- [docs/next-services-architecture.md](/Users/edinhomedeiros/Documents/GitHub/_VIBE%20CODE/WORKSPACES/workspace-contexto-fc/docs/next-services-architecture.md)
 - [services/sofascore/README.md](/Users/edinhomedeiros/Documents/GitHub/_VIBE%20CODE/WORKSPACES/workspace-contexto-fc/services/sofascore/README.md)
 - [services/sofascore/docs/data-model.md](/Users/edinhomedeiros/Documents/GitHub/_VIBE%20CODE/WORKSPACES/workspace-contexto-fc/services/sofascore/docs/data-model.md)
 - [services/sofascore/docs/scraper-decisions.md](/Users/edinhomedeiros/Documents/GitHub/_VIBE%20CODE/WORKSPACES/workspace-contexto-fc/services/sofascore/docs/scraper-decisions.md)
