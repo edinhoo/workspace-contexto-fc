@@ -202,22 +202,30 @@ const buildStagingInserts = (runId, ingestedAt) =>
     .filter(Boolean)
     .join("\n");
 
+export const buildLoadRunSql = ({
+  runId,
+  ingestedAt,
+  source = "sofascore",
+  status = "staged",
+  wrapInTransaction = true
+}) => `
+${wrapInTransaction ? "begin;" : ""}
+
+insert into ops.ingestion_runs (run_id, source, started_at, status)
+values (${sqlLiteral(runId)}, ${sqlLiteral(source)}, ${sqlLiteral(ingestedAt)}, ${sqlLiteral(status)});
+
+${buildStagingInserts(runId, ingestedAt)}
+
+${wrapInTransaction ? "commit;" : ""}
+`;
+
 export const loadRunToStaging = ({ runId = `phase2-${randomUUID()}`, source = "sofascore" } = {}) => {
   validateSourceFiles();
 
   const ingestedAt = new Date().toISOString();
   const sqlFile = createTempSqlFile(
     "contexto-fc-phase2-load",
-    `
-begin;
-
-insert into ops.ingestion_runs (run_id, source, started_at, status)
-values (${sqlLiteral(runId)}, ${sqlLiteral(source)}, ${sqlLiteral(ingestedAt)}, 'staged');
-
-${buildStagingInserts(runId, ingestedAt)}
-
-commit;
-`
+    buildLoadRunSql({ runId, ingestedAt, source })
   );
 
   try {

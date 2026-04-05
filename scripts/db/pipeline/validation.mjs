@@ -173,7 +173,7 @@ const VALIDATION_QUERIES = {
   `
 };
 
-const buildValidationSql = (runId) => {
+export const buildValidationSql = (runId) => {
   const statements = ENTITY_CONFIGS.map((config) => {
     const validationQuery = VALIDATION_QUERIES[config.entity]?.replaceAll(
       "$RUN_ID$",

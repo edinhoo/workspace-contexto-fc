@@ -24,10 +24,10 @@ export const runCommand = (command, args, options = {}) => {
   return result.stdout ?? "";
 };
 
-export const runPsqlFile = (absoluteFilePath) => {
+export const runPsqlFile = (absoluteFilePath, options = {}) => {
   const workspaceRelativePath = relative(WORKDIR, absoluteFilePath).replaceAll("\\", "/");
 
-  return runCommand("docker", [
+  const args = [
     "compose",
     "-f",
     COMPOSE_FILE,
@@ -40,10 +40,16 @@ export const runPsqlFile = (absoluteFilePath) => {
     "-U",
     DB_USER,
     "-d",
-    DB_NAME,
-    "-f",
-    `/workspace/${workspaceRelativePath}`
-  ]);
+    DB_NAME
+  ];
+
+  if (options.tuplesOnly) {
+    args.push("-At", "-F", "\t");
+  }
+
+  args.push("-f", `/workspace/${workspaceRelativePath}`);
+
+  return runCommand("docker", args);
 };
 
 export const runPsqlQuery = (query) =>

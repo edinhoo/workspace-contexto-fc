@@ -331,23 +331,41 @@ where run_id = $RUN_ID$
   }
 ];
 
-export const promoteRun = (runId) => {
-  const sql = `
-begin;
+export const buildPromotionSql = (runId, options = {}) => `
+${options.wrapInTransaction === false ? "" : "begin;"}
+
+delete from ops.ingestion_run_details where run_id = ${sqlLiteral(runId)};
 
 ${UPSERTS.map((config) => buildUpsert({ runId, ...config })).join("\n")}
 
 update ops.ingestion_runs
 set
-  status = 'completed',
+  status = ${sqlLiteral(options.finalStatus ?? "completed")},
   finished_at = now(),
   rows_inserted = coalesce((select sum(rows_inserted) from ops.ingestion_run_details where run_id = ${sqlLiteral(runId)}), 0),
   rows_updated = coalesce((select sum(rows_updated) from ops.ingestion_run_details where run_id = ${sqlLiteral(runId)}), 0),
   rows_skipped = coalesce((select sum(rows_skipped) from ops.ingestion_run_details where run_id = ${sqlLiteral(runId)}), 0)
 where run_id = ${sqlLiteral(runId)};
 
-commit;
+${options.wrapInTransaction === false ? "" : "commit;"}
 `;
+
+export const buildRunDetailsSummaryQuery = (runId) => `
+select
+  entity,
+  rows_seen::text,
+  rows_valid::text,
+  rows_invalid::text,
+  rows_inserted::text,
+  rows_updated::text,
+  rows_skipped::text
+from ops.ingestion_run_details
+where run_id = ${sqlLiteral(runId)}
+order by entity;
+`;
+
+export const promoteRun = (runId) => {
+  const sql = buildPromotionSql(runId);
 
   const sqlFile = createTempSqlFile("contexto-fc-phase2-promote", sql);
 
