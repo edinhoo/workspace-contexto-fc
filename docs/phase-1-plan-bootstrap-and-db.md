@@ -1,6 +1,23 @@
 # Planejamento da Fase 1 - Banco e Bootstrap de Validacao
 
 Veja tambem: `docs/phase-1-bootstrap-validation-report.md`
+Veja tambem: `docs/phase-1-closeout.md`
+
+## Status
+
+Concluida.
+
+## Resultado real
+
+A Fase 1 foi executada com sucesso e validada em banco limpo.
+
+Marcos principais:
+
+- migrations SQL aplicadas com sucesso
+- bootstrap executado via `staging.* -> core.*`
+- relatorio final gerado com `354` registros promovidos
+- checks relacionais e checks extras retornaram `0` inconsistencias
+- endurecimentos pos-execucao foram incorporados ainda nesta fase
 
 ## Objetivo
 
@@ -221,6 +238,14 @@ Antes de comecar a Fase 1 de fato, vale fechar:
 1. se `team_match_stats` sera carregado do CSV ou recalculado ja na validacao
 2. quais tabelas de `staging.*` serao tabulares na V1 e quais usarao `payload jsonb`
 3. qual sera a convencao de nome e ordenacao das migrations SQL versionadas
+
+## Fechamento
+
+Essas decisoes foram resolvidas durante a execucao da fase:
+
+1. `team_match_stats` foi carregado do CSV atual
+2. `staging.*` ficou hibrido, com apoio de `jsonb` nas entidades largas
+3. migrations SQL versionadas foram adotadas como baseline
 
 ## Criterio de encerramento da Fase 1
 

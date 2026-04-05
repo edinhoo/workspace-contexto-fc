@@ -9,6 +9,7 @@ Veja tambem: `docs/data-platform-ddl-review.md`
 Veja tambem: `docs/data-platform-ddl-v1.md`
 Veja tambem: `docs/phase-0-decisions-for-validation.md`
 Veja tambem: `docs/phase-1-plan-bootstrap-and-db.md`
+Veja tambem: `docs/phase-1-closeout.md`
 
 ## Objetivo
 
@@ -72,6 +73,10 @@ Fechar o contrato tecnico antes de subir servicos novos.
 
 Validar o desenho do banco com dados reais usando os CSVs atuais uma unica vez.
 
+### Status
+
+Concluida.
+
 ### Entregaveis
 
 - `PostgreSQL` disponivel localmente no `docker-compose`
@@ -97,6 +102,14 @@ Validar o desenho do banco com dados reais usando os CSVs atuais uma unica vez.
 - relacionamentos essenciais batem com os dados reais
 - o fluxo `staging.* -> core.*` foi validado pelo bootstrap
 - o bootstrap pode ser removido depois sem deixar dependencia estrutural
+
+### Resultado consolidado
+
+- banco local executado com sucesso
+- migrations SQL versionadas validadas em banco limpo
+- bootstrap temporario executado com `354` registros promovidos
+- checks relacionais, de unicidade e semantica basica retornaram `0` inconsistencias
+- endurecimentos pos-execucao aplicados ainda na propria Fase 1
 
 ## Fase 2 - Pipeline de ingestao seguro
 
