@@ -6,6 +6,8 @@ Traduzir o contrato, o desenho de schemas e a matriz de constraints da Fase 0 em
 
 Este documento ainda nao e migration executavel. Ele existe para fechar a modelagem SQL antes da Fase 1.
 
+Veja tambem: `docs/data-platform-ddl-review.md`
+
 ## Escopo desta proposta
 
 Esta primeira proposta cobre:
@@ -35,6 +37,7 @@ Ela ainda deixa em aberto:
 ```sql
 create schema if not exists core;
 create schema if not exists staging;
+create schema if not exists ops;
 create schema if not exists raw;
 create schema if not exists read;
 create schema if not exists editorial;
@@ -433,10 +436,15 @@ create table core.player_career_teams (
 
 ## Tabelas operacionais
 
-### `core.ingestion_runs`
+Observacao:
+
+- a revisao da Fase 0 recomenda mover essas tabelas para `ops.*`
+- elas permanecem aqui apenas como ponto de comparacao da proposta inicial
+
+### `ops.ingestion_runs`
 
 ```sql
-create table core.ingestion_runs (
+create table ops.ingestion_runs (
   run_id text primary key,
   source text not null,
   started_at timestamptz not null,
@@ -450,10 +458,10 @@ create table core.ingestion_runs (
 );
 ```
 
-### `core.planned_matches`
+### `ops.planned_matches`
 
 ```sql
-create table core.planned_matches (
+create table ops.planned_matches (
   id text primary key,
   provider text not null,
   provider_event_id text not null,
@@ -465,17 +473,17 @@ create table core.planned_matches (
 );
 ```
 
-### `core.scheduled_scrapes`
+### `ops.scheduled_scrapes`
 
 ```sql
-create table core.scheduled_scrapes (
+create table ops.scheduled_scrapes (
   id text primary key,
-  planned_match_id text not null references core.planned_matches(id),
+  planned_match_id text not null references ops.planned_matches(id),
   scheduled_for timestamptz not null,
   pass_number integer not null check (pass_number > 0),
   status text not null,
   triggered_by text,
-  run_id text references core.ingestion_runs(run_id),
+  run_id text references ops.ingestion_runs(run_id),
   created_at timestamptz not null,
   updated_at timestamptz not null
 );
@@ -488,7 +496,7 @@ Cada tabela de staging deve seguir esta base:
 ```sql
 create table staging.<entity> (
   id text primary key,
-  run_id text not null references core.ingestion_runs(run_id),
+  run_id text not null references ops.ingestion_runs(run_id),
   ingested_at timestamptz not null,
   validation_status text not null,
   validation_errors jsonb,
@@ -508,6 +516,7 @@ Observacao:
 - `cities.state` e opcional
 - `player_match_stats` e `team_match_stats` usam `jsonb` nesta proposta inicial
 - `referee`, `manager` e `stadium` podem comecar como relacionamentos opcionais em `matches`
+- a revisao posterior recomenda `ops.*` para tabelas operacionais
 
 ## Decisoes ainda em aberto
 

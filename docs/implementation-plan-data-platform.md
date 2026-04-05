@@ -5,6 +5,7 @@ Veja tambem: `docs/data-platform-contract.md`
 Veja tambem: `docs/data-platform-schema-design.md`
 Veja tambem: `docs/data-platform-constraints-matrix.md`
 Veja tambem: `docs/data-platform-ddl-proposal.md`
+Veja tambem: `docs/data-platform-ddl-review.md`
 
 ## Objetivo
 
