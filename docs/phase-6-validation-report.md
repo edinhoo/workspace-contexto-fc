@@ -88,3 +88,8 @@ A Fase 6 foi validada com sucesso como prova de:
 - fronteira segura entre painel e canônico
 - ajuste manual real sem SQL manual
 - sincronizacao controlada para `core.*` e `editorial.*`
+
+## Limitacoes conhecidas
+
+- `panel_states` sincroniza apenas `insert` e `update`; `delete` no painel nao remove o registro correspondente de `core.states`
+- as colecoes `panel_*` ficaram no `public`, junto das tabelas internas do `Directus`, por estabilidade de runtime nesta iteracao

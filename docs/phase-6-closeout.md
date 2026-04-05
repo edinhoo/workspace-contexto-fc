@@ -53,6 +53,8 @@ Motivo:
 - o `Directus` ainda depende de registro explicito das colecoes operacionais da fase
 - a camada editorial continua pequena de proposito
 - a fase nao tentou transformar o CMS em caminho alternativo de ingestao
+- `panel_states` nao propaga `delete` para `core.states`; a manutencao desta entidade continua assumindo cadastro estavel
+- as superfícies `panel_*` ficaram no `public`; se essa camada crescer, vale reavaliar um schema proprio para organizacao sem voltar ao schema `directus`
 
 ## Proxima fase recomendada
 
