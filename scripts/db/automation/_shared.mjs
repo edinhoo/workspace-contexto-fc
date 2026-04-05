@@ -91,6 +91,160 @@ export const getScheduledScrapesForPlannedMatch = (plannedMatchId) =>
     attemptCount: Number(attemptCount)
   }));
 
+export const getLatestIngestionRunId = (source = "sofascore") => {
+  const rows = parseRows(
+    runPsqlQuery(`
+      select run_id
+      from ops.ingestion_runs
+      where source = ${sqlLiteral(source)}
+      order by started_at desc
+      limit 1;
+    `)
+  );
+
+  return rows[0]?.[0] ?? null;
+};
+
+export const getNextDueScheduledScrape = () => {
+  const rows = parseRows(
+    runPsqlQuery(`
+      select
+        ss.id,
+        ss.planned_match_id,
+        pm.provider,
+        pm.provider_event_id,
+        ss.pass_number::text,
+        ss.scheduled_for::text,
+        ss.status,
+        ss.attempt_count::text
+      from ops.scheduled_scrapes ss
+      join ops.planned_matches pm on pm.id = ss.planned_match_id
+      where ss.status = 'pending'
+        and ss.scheduled_for <= now()
+        and pm.status <> 'cancelled'
+      order by ss.scheduled_for asc, ss.pass_number asc
+      limit 1;
+    `)
+  );
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  const [id, plannedMatchId, provider, providerEventId, passNumber, scheduledFor, status, attemptCount] =
+    rows[0];
+
+  return {
+    id,
+    plannedMatchId,
+    provider,
+    providerEventId,
+    passNumber: Number(passNumber),
+    scheduledFor,
+    status,
+    attemptCount: Number(attemptCount)
+  };
+};
+
+export const reserveScheduledScrape = ({ scheduledScrapeId, triggeredBy }) => {
+  runPsqlQuery(`
+    update ops.scheduled_scrapes
+    set
+      status = 'running',
+      triggered_by = ${sqlLiteral(triggeredBy)},
+      attempt_count = attempt_count + 1,
+      last_attempted_at = now(),
+      updated_at = now(),
+      error_message = null
+    where id = ${sqlLiteral(scheduledScrapeId)}
+      and status = 'pending';
+  `);
+};
+
+export const completeScheduledScrape = ({
+  scheduledScrapeId,
+  runId,
+  provider,
+  providerEventId
+}) => {
+  const rows = parseRows(
+    runPsqlQuery(`
+      select id
+      from core.matches
+      where source = ${sqlLiteral(provider)}
+        and source_ref = ${sqlLiteral(providerEventId)}
+      limit 1;
+    `)
+  );
+
+  const coreMatchId = rows[0]?.[0] ?? null;
+
+  runPsqlQuery(`
+    update ops.scheduled_scrapes
+    set
+      status = 'done',
+      run_id = ${sqlLiteral(runId)},
+      finished_at = now(),
+      updated_at = now(),
+      error_message = null
+    where id = ${sqlLiteral(scheduledScrapeId)};
+  `);
+
+  if (coreMatchId) {
+    runPsqlQuery(`
+      update ops.planned_matches
+      set
+        core_match_id = ${sqlLiteral(coreMatchId)},
+        status = 'linked',
+        updated_at = now()
+      where id = (
+        select planned_match_id
+        from ops.scheduled_scrapes
+        where id = ${sqlLiteral(scheduledScrapeId)}
+      );
+    `);
+  }
+
+  return {
+    coreMatchId
+  };
+};
+
+export const failScheduledScrape = ({
+  scheduledScrapeId,
+  retryable,
+  errorMessage
+}) => {
+  const rows = parseRows(
+    runPsqlQuery(`
+      select attempt_count::text
+      from ops.scheduled_scrapes
+      where id = ${sqlLiteral(scheduledScrapeId)}
+      limit 1;
+    `)
+  );
+
+  const attemptCount = Number(rows[0]?.[0] ?? "0");
+  const shouldRetry = retryable && attemptCount <= MAX_AUTOMATIC_RETRIES;
+  const nextStatus = shouldRetry ? "pending" : "failed";
+
+  runPsqlQuery(`
+    update ops.scheduled_scrapes
+    set
+      status = ${sqlLiteral(nextStatus)},
+      finished_at = case when ${sqlLiteral(nextStatus)} = 'failed' then now() else finished_at end,
+      updated_at = now(),
+      error_message = ${sqlLiteral(errorMessage)}
+    where id = ${sqlLiteral(scheduledScrapeId)};
+  `);
+
+  return {
+    attemptCount,
+    shouldRetry,
+    nextStatus
+  };
+};
+
 const buildInsertScheduledScrapesSql = ({ plannedMatchId, scheduledAt, triggeredBy }) =>
   buildScheduledPasses(scheduledAt)
     .map(
@@ -124,7 +278,7 @@ export const upsertPlannedMatchSchedule = ({
   provider,
   providerEventId,
   scheduledAt,
-  triggeredBy = "cli"
+  triggeredBy = "scheduler"
 }) => {
   const existingPlannedMatch = getPlannedMatchByProviderEventId({ provider, providerEventId });
   const normalizedScheduledAt = scheduledAt.toISOString();
