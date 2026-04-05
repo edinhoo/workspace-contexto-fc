@@ -126,6 +126,7 @@ import type { Identifier } from "@repo/types";
 - Os packages compartilhados ja possuem scripts padrao e build independente.
 - O `docker-compose.yml` esta pronto para receber futuros containers sem travar a base atual.
 - A Fase 1 da plataforma de dados usa `PostgreSQL` local em `localhost:54329`, banco `contexto_fc`, usuario `contexto_fc` e senha `contexto_fc`.
+- Essas credenciais sao apenas para desenvolvimento local e nao devem ser reutilizadas fora desse ambiente.
 
 ## Documentacao recomendada
 

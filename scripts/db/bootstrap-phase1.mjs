@@ -54,6 +54,8 @@ const statsBaseColumns = [
   "updated_at"
 ];
 
+const sourceFiles = tableConfigs.map((config) => resolve(dataDir, config.file));
+
 const parseCsv = (filePath) => {
   const content = readFileSync(filePath, "utf8");
   const lines = content
@@ -72,6 +74,27 @@ const parseCsv = (filePath) => {
   });
 
   return { headers, rows };
+};
+
+const validateSourceFiles = () => {
+  const problems = [];
+
+  for (const filePath of sourceFiles) {
+    try {
+      const { headers } = parseCsv(filePath);
+
+      if (headers.length === 0) {
+        problems.push(`${filePath}: arquivo vazio ou sem header`);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      problems.push(`${filePath}: ${message}`);
+    }
+  }
+
+  if (problems.length > 0) {
+    throw new Error(`Falha na pre-validacao dos CSVs:\n- ${problems.join("\n- ")}`);
+  }
 };
 
 const parseCsvRow = (row) => {
@@ -353,7 +376,11 @@ insert into core.stadiums (
   first_scraped_at, last_scraped_at, created_at, updated_at
 )
 select
-  id, slug, name, short_name, city, capacity, latitude, longitude, coalesce(source_ref, id),
+  id, slug, name, short_name, city,
+  nullif(capacity::text, '')::integer,
+  nullif(latitude::text, '')::numeric(9, 6),
+  nullif(longitude::text, '')::numeric(9, 6),
+  coalesce(source_ref, id),
   coalesce(source, 'sofascore'),
   coalesce(first_scraped_at, ingested_at), coalesce(last_scraped_at, ingested_at),
   coalesce(created_at, ingested_at), coalesce(updated_at, ingested_at)
@@ -443,13 +470,29 @@ insert into core.matches (
 )
 select
   id, tournament, season, round, nullif(stadium, ''), nullif(referee, ''), home_team, nullif(home_manager, ''),
-  home_formation, home_score_period_1, home_score_period_2, home_score_normaltime, home_score_extra_1,
-  home_score_extra_2, home_score_overtime, home_score_penalties, away_team, nullif(away_manager, ''),
-  away_formation, away_score_period_1, away_score_period_2, away_score_normaltime,
-  away_score_extra_1, away_score_extra_2, away_score_overtime, away_score_penalties,
+  home_formation,
+  nullif(home_score_period_1::text, '')::integer,
+  nullif(home_score_period_2::text, '')::integer,
+  nullif(home_score_normaltime::text, '')::integer,
+  nullif(home_score_extra_1::text, '')::integer,
+  nullif(home_score_extra_2::text, '')::integer,
+  nullif(home_score_overtime::text, '')::integer,
+  nullif(home_score_penalties::text, '')::integer,
+  away_team, nullif(away_manager, ''),
+  away_formation,
+  nullif(away_score_period_1::text, '')::integer,
+  nullif(away_score_period_2::text, '')::integer,
+  nullif(away_score_normaltime::text, '')::integer,
+  nullif(away_score_extra_1::text, '')::integer,
+  nullif(away_score_extra_2::text, '')::integer,
+  nullif(away_score_overtime::text, '')::integer,
+  nullif(away_score_penalties::text, '')::integer,
   to_timestamp(start_time::double precision),
   case when nullif(period_start_time, '') is null then null else to_timestamp(period_start_time::double precision) end,
-  injury_time_1, injury_time_2, injury_time_3, injury_time_4,
+  nullif(injury_time_1::text, '')::integer,
+  nullif(injury_time_2::text, '')::integer,
+  nullif(injury_time_3::text, '')::integer,
+  nullif(injury_time_4::text, '')::integer,
   coalesce(source_ref, id), coalesce(source, 'sofascore'),
   coalesce(first_scraped_at, ingested_at), coalesce(last_scraped_at, ingested_at),
   coalesce(created_at, ingested_at), coalesce(updated_at, ingested_at)
@@ -462,8 +505,9 @@ insert into core.lineups (
   created_at, updated_at
 )
 select
-  id, match, team, player, jersey_number, position, substitute, is_missing, slot, minutes_played,
-  rating, source_match_id, source_team_id, source_player_id, coalesce(source, 'sofascore'),
+  id, match, team, player, nullif(jersey_number::text, '')::integer, position, substitute, is_missing, slot,
+  nullif(minutes_played::text, '')::integer,
+  nullif(rating::text, '')::numeric(4, 2), source_match_id, source_team_id, source_player_id, coalesce(source, 'sofascore'),
   coalesce(first_scraped_at, ingested_at), coalesce(last_scraped_at, ingested_at),
   coalesce(created_at, ingested_at), coalesce(updated_at, ingested_at)
 from staging.lineups
@@ -549,6 +593,8 @@ where run_id = ${sqlLiteral(runId)};
 
 commit;
 `;
+
+validateSourceFiles();
 
 const sqlFile = createTempSqlFile("contexto-fc-phase1-bootstrap", buildBootstrapSql());
 

@@ -128,6 +128,87 @@ const checks = {
     from core.events e
     left join core.managers m on m.id = e.manager
     where e.manager is not null and m.id is null;
+  `),
+  duplicateCountrySourceRef: countQuery(`
+    select count(*)
+    from (
+      select source_ref
+      from core.countries
+      group by source_ref
+      having count(*) > 1
+    ) duplicates;
+  `),
+  duplicateCitySourceRef: countQuery(`
+    select count(*)
+    from (
+      select source_ref
+      from core.cities
+      group by source_ref
+      having count(*) > 1
+    ) duplicates;
+  `),
+  duplicateTeamSourceRef: countQuery(`
+    select count(*)
+    from (
+      select source_ref
+      from core.teams
+      group by source_ref
+      having count(*) > 1
+    ) duplicates;
+  `),
+  duplicatePlayerSourceRef: countQuery(`
+    select count(*)
+    from (
+      select source_ref
+      from core.players
+      group by source_ref
+      having count(*) > 1
+    ) duplicates;
+  `),
+  duplicateMatchSourceRef: countQuery(`
+    select count(*)
+    from (
+      select source_ref
+      from core.matches
+      group by source_ref
+      having count(*) > 1
+    ) duplicates;
+  `),
+  invalidStadiumCapacity: countQuery(`
+    select count(*)
+    from core.stadiums
+    where capacity is not null and capacity < 0;
+  `),
+  invalidStadiumCoordinates: countQuery(`
+    select count(*)
+    from core.stadiums
+    where (latitude is not null and (latitude < -90 or latitude > 90))
+       or (longitude is not null and (longitude < -180 or longitude > 180));
+  `),
+  invalidMatchScores: countQuery(`
+    select count(*)
+    from core.matches
+    where coalesce(home_score_period_1, 0) < 0
+       or coalesce(home_score_period_2, 0) < 0
+       or coalesce(home_score_normaltime, 0) < 0
+       or coalesce(home_score_extra_1, 0) < 0
+       or coalesce(home_score_extra_2, 0) < 0
+       or coalesce(home_score_overtime, 0) < 0
+       or coalesce(home_score_penalties, 0) < 0
+       or coalesce(away_score_period_1, 0) < 0
+       or coalesce(away_score_period_2, 0) < 0
+       or coalesce(away_score_normaltime, 0) < 0
+       or coalesce(away_score_extra_1, 0) < 0
+       or coalesce(away_score_extra_2, 0) < 0
+       or coalesce(away_score_overtime, 0) < 0
+       or coalesce(away_score_penalties, 0) < 0;
+  `),
+  invalidLineupMetrics: countQuery(`
+    select count(*)
+    from core.lineups
+    where (jersey_number is not null and jersey_number < 0)
+       or (minutes_played is not null and (minutes_played < 0 or minutes_played > 130))
+       or (rating is not null and (rating < 0 or rating > 10));
   `)
 };
 
@@ -174,12 +255,22 @@ const report = `# Relatorio de Validacao da Fase 1
 | events com player invalido | ${checks.invalidEventPlayerRefs} |
 | events com related_player invalido | ${checks.invalidRelatedPlayerRefs} |
 | events com manager invalido | ${checks.invalidManagerRefs} |
+| countries com source_ref duplicado | ${checks.duplicateCountrySourceRef} |
+| cities com source_ref duplicado | ${checks.duplicateCitySourceRef} |
+| teams com source_ref duplicado | ${checks.duplicateTeamSourceRef} |
+| players com source_ref duplicado | ${checks.duplicatePlayerSourceRef} |
+| matches com source_ref duplicado | ${checks.duplicateMatchSourceRef} |
+| stadiums com capacity invalida | ${checks.invalidStadiumCapacity} |
+| stadiums com coordenadas invalidas | ${checks.invalidStadiumCoordinates} |
+| matches com scores invalidos | ${checks.invalidMatchScores} |
+| lineups com metricas invalidas | ${checks.invalidLineupMetrics} |
 
 ## Observacoes
 
 - \`core.states\` permanece vazio na Fase 1, conforme esperado, porque nao existe fonte CSV atual para esse cadastro.
 - O bootstrap passou por \`staging.*\` antes de promover para \`core.*\`.
 - \`team_match_stats\` foi carregado do CSV atual nesta fase, conforme a decisao baseline da V1.
+- A validacao agora cobre unicidade de \`source_ref\` nas entidades principais e checks semanticos basicos de estadio, placar e lineup.
 `;
 
 const outputPath = resolve(
