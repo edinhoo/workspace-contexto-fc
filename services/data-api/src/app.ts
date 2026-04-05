@@ -1,5 +1,6 @@
 import Fastify, { type FastifyInstance } from "fastify";
 
+import { registerErrorHandler } from "./http/error.js";
 import { registerHealthRoute } from "./routes/health.js";
 
 export const createApp = (): FastifyInstance => {
@@ -15,6 +16,7 @@ export const createApp = (): FastifyInstance => {
     }));
   });
 
+  registerErrorHandler(app);
   registerHealthRoute(app);
 
   return app;
