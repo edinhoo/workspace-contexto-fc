@@ -85,7 +85,7 @@ Os warnings passaram a aparecer:
 
 Migration aplicada:
 
-- `0006_phase7_scheduler_pending_index.sql`
+- `0009_phase7_scheduler_pending_index.sql`
 
 Query verificada com `EXPLAIN`:
 
