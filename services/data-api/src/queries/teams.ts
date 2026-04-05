@@ -86,6 +86,7 @@ export const getTeamContext = async (
       .where("l.team", "=", teamId)
       .groupBy(["p.id", "p.name", "p.slug", "p.position"])
       .orderBy("p.name", "asc")
+      // TODO: alinhar com paginacao padrao quando o banco tiver mais eventos
       .limit(10)
       .execute(),
   ]);

@@ -46,6 +46,8 @@ Entregar a primeira versao de `services/data-api`, provando que a plataforma con
 - `warnings` seguem pouco explorados na trilha de ingestao
 - `read.*` pode entrar mais a frente se surgirem consultas repetidas de verdade
 - ainda nao ha autenticacao, `Directus` nem automacao
+- `relatedPlayers` em `GET /teams/:id` busca jogadores observados em lineups, nao elenco atual; com a massa atual e equivalente, mas crescera como lista historica quando houver mais eventos no banco
+- o limite de `10` em `relatedPlayers` esta hardcoded; nao segue o padrao de paginacao do servico e deve ser alinhado quando o campo ganhar mais volume
 
 ## Proximo passo recomendado
 

@@ -8,6 +8,8 @@ export const paginationSchema = z.object({
   limit: z.coerce.number().int().positive().max(50).default(10),
 });
 
+// Alguns drivers pg retornam colunas numericas como string dependendo do tipo SQL.
+// Este schema normaliza os dois formatos para number no contrato de resposta.
 export const nullableNumberFieldSchema = numberLikeSchema
   .transform((value) => Number(value))
   .nullable();
