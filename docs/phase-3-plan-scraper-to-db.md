@@ -3,6 +3,7 @@
 Veja tambem: `docs/phase-2-closeout.md`
 Veja tambem: `docs/phase-2-validation-report.md`
 Veja tambem: `docs/phase-2-staging-compatibility-matrix.md`
+Veja tambem: `docs/phase-3-integration-decision.md`
 
 ## Objetivo
 
@@ -117,11 +118,14 @@ Tarefas:
 
 - mapear os modulos de storage usados pelo `services/sofascore`
 - identificar o contrato final por entidade antes da escrita em disco
-- decidir se a integracao entra em uma camada nova de writer ou substitui o storage atual
+- registrar a decisao de integracao entre:
+  - nova camada de writer para banco
+  - substituicao direta do storage atual
 
 Criterio de pronto:
 
 - existe um ponto de integracao claro, sem duplicar normalizacao ou regras de negocio
+- a decisao arquitetural da frente foi registrada explicitamente
 
 ### Frente 2 - Escrita do scraper em `staging.*`
 
