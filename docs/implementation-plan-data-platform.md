@@ -8,6 +8,7 @@ Veja tambem: `docs/data-platform-ddl-proposal.md`
 Veja tambem: `docs/data-platform-ddl-review.md`
 Veja tambem: `docs/data-platform-ddl-v1.md`
 Veja tambem: `docs/phase-0-decisions-for-validation.md`
+Veja tambem: `docs/phase-2-plan-ingestion-pipeline.md`
 
 ## Objetivo
 
@@ -112,11 +113,13 @@ Criar o fluxo permanente de ingestao no banco com staging, validacao e promocao.
 
 ### Tarefas
 
-- modelar `staging.*` para as entidades ingeridas pelo scraper
+- confirmar compatibilidade entre payload real do scraper e `staging.*`
 - implementar validacoes automaticas reutilizando as regras ja consolidadas no projeto
 - implementar promocao controlada para `core.*`
+- definir politica explicita de idempotencia para o canonico
 - registrar resultado de cada execucao em `ingestion_runs`
-- adicionar diffs e contadores por lote
+- adicionar `ops.ingestion_run_details` com contadores por entidade
+- implementar `dry-run` com validacao, relatorio e `rollback`
 
 ### Dependencias
 
@@ -127,6 +130,7 @@ Criar o fluxo permanente de ingestao no banco com staging, validacao e promocao.
 - uma execucao falha nao altera `core.*`
 - a mesma execucao pode ser repetida sem duplicar dados
 - existe visibilidade clara do que mudou em cada lote
+- existe `dry-run` confiavel sem impacto em `core.*`
 
 ## Fase 3 - Migracao do scraper para o banco
 
