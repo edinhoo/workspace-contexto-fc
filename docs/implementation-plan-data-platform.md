@@ -18,6 +18,9 @@ Veja tambem: `docs/phase-4-plan-data-api.md`
 Veja tambem: `docs/phase-4-closeout.md`
 Veja tambem: `docs/phase-4-validation-report.md`
 Veja tambem: `docs/phase-5-plan-scrape-automation.md`
+Veja tambem: `docs/phase-5-automation-states.md`
+Veja tambem: `docs/phase-5-validation-report.md`
+Veja tambem: `docs/phase-5-closeout.md`
 
 ## Objetivo
 
@@ -270,6 +273,10 @@ Concluida.
 
 Automatizar a coleta por partida sem mudar o metodo de ingestao.
 
+### Status
+
+Concluida.
+
 ### Entregaveis
 
 - `ops.planned_matches`
@@ -311,6 +318,16 @@ Automatizar a coleta por partida sem mudar o metodo de ingestao.
 - remarcacao de partida cancela scrapes futuros pendentes e regenera a agenda
 - adiar batching por janela de tempo para a Fase 7
 - nao introduzir UI, `Directus` ou logica live nesta fase
+
+### Resultado consolidado
+
+- `ops.planned_matches` e `ops.scheduled_scrapes` materializados
+- agenda automatica de tres passes por partida implementada
+- scheduler serial validado com o mesmo pipeline do scraper manual
+- `planned_match_id -> scheduled_scrape_id -> run_id` confirmado na pratica
+- primeiro run automatico com `251` insercoes
+- runs seguintes sem duplicidade no canônico
+- cancelamento e rerun manual validados
 
 ## Fase 6 - CMS e edicao operacional
 

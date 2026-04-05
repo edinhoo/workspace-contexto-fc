@@ -321,12 +321,12 @@ export const loadRunToStaging = ({ runId = `phase2-${randomUUID()}`, source = "s
 
 export const loadRunToStagingFromEntityRows = ({
   entityRowsByName,
-  runId = `phase3-${randomUUID()}`,
+  runId = `sofascore-${randomUUID()}`,
   source = "sofascore"
 } = {}) => {
   const ingestedAt = new Date().toISOString();
   const sqlFile = createTempSqlFile(
-    "contexto-fc-phase3-load",
+    "contexto-fc-sofascore-load",
     buildLoadRunSqlFromEntityRows({
       entityRowsByName,
       runId,

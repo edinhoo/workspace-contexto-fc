@@ -10,6 +10,18 @@ create table if not exists ops.planned_matches (
   unique (provider, provider_event_id)
 );
 
+alter table ops.planned_matches
+  add column if not exists status text;
+
+alter table ops.planned_matches
+  add column if not exists core_match_id text references core.matches(id) on delete set null;
+
+alter table ops.planned_matches
+  add column if not exists created_at timestamptz;
+
+alter table ops.planned_matches
+  add column if not exists updated_at timestamptz;
+
 create index if not exists idx_ops_planned_matches_scheduled_at
   on ops.planned_matches(scheduled_at);
 
@@ -32,6 +44,33 @@ create table if not exists ops.scheduled_scrapes (
   updated_at timestamptz not null,
   unique (planned_match_id, pass_number, scheduled_for)
 );
+
+alter table ops.scheduled_scrapes
+  add column if not exists status text;
+
+alter table ops.scheduled_scrapes
+  add column if not exists triggered_by text;
+
+alter table ops.scheduled_scrapes
+  add column if not exists run_id text references ops.ingestion_runs(run_id) on delete set null;
+
+alter table ops.scheduled_scrapes
+  add column if not exists error_message text;
+
+alter table ops.scheduled_scrapes
+  add column if not exists attempt_count integer default 0;
+
+alter table ops.scheduled_scrapes
+  add column if not exists last_attempted_at timestamptz;
+
+alter table ops.scheduled_scrapes
+  add column if not exists finished_at timestamptz;
+
+alter table ops.scheduled_scrapes
+  add column if not exists created_at timestamptz;
+
+alter table ops.scheduled_scrapes
+  add column if not exists updated_at timestamptz;
 
 create index if not exists idx_ops_scheduled_scrapes_due
   on ops.scheduled_scrapes(status, scheduled_for);
