@@ -1,4 +1,5 @@
 import { HttpError } from "../http/error.js";
+import { buildTeamPerspectiveMatch } from "./shared/team-perspective.js";
 import type { DbClient } from "../types.js";
 
 type TeamFilters = {
@@ -97,18 +98,26 @@ export const getTeamContext = async (
       opponent: filters.opponent ?? null,
     },
     recentMatches: matches.map((match) => {
-      const isHome = match.homeTeamId === teamId;
+      const perspective = buildTeamPerspectiveMatch({
+        referenceTeamId: teamId,
+        homeTeamId: match.homeTeamId,
+        homeTeamName: match.homeTeamName,
+        awayTeamId: match.awayTeamId,
+        awayTeamName: match.awayTeamName,
+        homeScore: match.homeScore,
+        awayScore: match.awayScore,
+      });
 
       return {
         id: match.id,
         startTime: match.startTime.toISOString(),
         tournamentName: match.tournamentName,
         seasonName: match.seasonName,
-        opponentId: isHome ? match.awayTeamId : match.homeTeamId,
-        opponentName: isHome ? match.awayTeamName : match.homeTeamName,
-        side: isHome ? "home" : "away",
-        teamScore: isHome ? match.homeScore : match.awayScore,
-        opponentScore: isHome ? match.awayScore : match.homeScore,
+        opponentId: perspective.opponentId,
+        opponentName: perspective.opponentName,
+        side: perspective.side,
+        teamScore: perspective.teamScore,
+        opponentScore: perspective.opponentScore,
       };
     }),
     relatedPlayers,

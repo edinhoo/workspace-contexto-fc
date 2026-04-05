@@ -1,4 +1,5 @@
 import { HttpError } from "../http/error.js";
+import { buildTeamPerspectiveMatch } from "./shared/team-perspective.js";
 import type { DbClient } from "../types.js";
 
 export const getPlayerContext = async (db: DbClient, playerId: string) => {
@@ -72,15 +73,23 @@ export const getPlayerContext = async (db: DbClient, playerId: string) => {
     player,
     currentTeams,
     recentAppearances: recentAppearances.map((appearance) => {
-      const isHome = appearance.homeTeamId === appearance.teamId;
+      const perspective = buildTeamPerspectiveMatch({
+        referenceTeamId: appearance.teamId,
+        homeTeamId: appearance.homeTeamId,
+        homeTeamName: appearance.homeTeamName,
+        awayTeamId: appearance.awayTeamId,
+        awayTeamName: appearance.awayTeamName,
+        homeScore: null,
+        awayScore: null,
+      });
 
       return {
         matchId: appearance.matchId,
         startTime: appearance.startTime.toISOString(),
         teamId: appearance.teamId,
         teamName: appearance.teamName,
-        opponentId: isHome ? appearance.awayTeamId : appearance.homeTeamId,
-        opponentName: isHome ? appearance.awayTeamName : appearance.homeTeamName,
+        opponentId: perspective.opponentId,
+        opponentName: perspective.opponentName,
         minutesPlayed: appearance.minutesPlayed,
         rating: appearance.rating,
       };
