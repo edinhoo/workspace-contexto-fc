@@ -73,7 +73,7 @@ export const getTeamContext = async (
   }
 
   const [matches, relatedPlayers] = await Promise.all([
-    matchesQuery.orderBy("m.start_time desc").limit(5).execute(),
+    matchesQuery.orderBy("m.start_time", "desc").limit(5).execute(),
     db
       .selectFrom("core.lineups as l")
       .innerJoin("core.players as p", "p.id", "l.player")
@@ -85,7 +85,7 @@ export const getTeamContext = async (
       ])
       .where("l.team", "=", teamId)
       .groupBy(["p.id", "p.name", "p.slug", "p.position"])
-      .orderBy("p.name asc")
+      .orderBy("p.name", "asc")
       .limit(10)
       .execute(),
   ]);

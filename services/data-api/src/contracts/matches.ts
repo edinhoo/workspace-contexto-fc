@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { entityIdSchema } from "./common.js";
+import { entityIdSchema, nullableNumberFieldSchema } from "./common.js";
 
 export const matchParamsSchema = z.object({
   id: entityIdSchema,
@@ -27,13 +27,13 @@ export const matchResponseSchema = z.object({
     id: z.string(),
     name: z.string(),
     slug: z.string(),
-    score: z.string().nullable(),
+    score: nullableNumberFieldSchema,
   }),
   awayTeam: z.object({
     id: z.string(),
     name: z.string(),
     slug: z.string(),
-    score: z.string().nullable(),
+    score: nullableNumberFieldSchema,
   }),
   stadium: z
     .object({
@@ -58,9 +58,9 @@ export const matchResponseSchema = z.object({
       playerId: z.string(),
       playerName: z.string(),
       position: z.string().nullable(),
-      jerseyNumber: z.string().nullable(),
-      minutesPlayed: z.string().nullable(),
-      rating: z.string().nullable(),
+      jerseyNumber: nullableNumberFieldSchema,
+      minutesPlayed: nullableNumberFieldSchema,
+      rating: nullableNumberFieldSchema,
     }),
   ),
   events: z.array(

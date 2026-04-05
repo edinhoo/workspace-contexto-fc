@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { entityIdSchema } from "./common.js";
+import { entityIdSchema, nullableNumberFieldSchema } from "./common.js";
 
 export const playerParamsSchema = z.object({
   id: entityIdSchema,
@@ -31,8 +31,8 @@ export const playerResponseSchema = z.object({
       teamName: z.string(),
       opponentId: z.string(),
       opponentName: z.string(),
-      minutesPlayed: z.string().nullable(),
-      rating: z.string().nullable(),
+      minutesPlayed: nullableNumberFieldSchema,
+      rating: nullableNumberFieldSchema,
     }),
   ),
   statEntries: z.array(

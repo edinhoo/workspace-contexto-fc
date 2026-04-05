@@ -64,8 +64,8 @@ export const getMatchContext = async (db: DbClient, matchId: string) => {
         "l.rating as rating",
       ])
       .where("l.match", "=", matchId)
-      .orderBy("t.name asc")
-      .orderBy("p.name asc")
+      .orderBy("t.name", "asc")
+      .orderBy("p.name", "asc")
       .execute(),
     db
       .selectFrom("core.events as e")
@@ -89,7 +89,7 @@ export const getMatchContext = async (db: DbClient, matchId: string) => {
         "e.away_score as awayScore",
       ])
       .where("e.match", "=", matchId)
-      .orderBy("e.sort_order asc")
+      .orderBy("e.sort_order", "asc")
       .execute(),
     db
       .selectFrom("core.team_match_stats as tms")
@@ -101,7 +101,7 @@ export const getMatchContext = async (db: DbClient, matchId: string) => {
         "tms.stat_payload as statPayload",
       ])
       .where("tms.match", "=", matchId)
-      .orderBy("t.name asc")
+      .orderBy("t.name", "asc")
       .execute(),
   ]);
 

@@ -52,6 +52,7 @@ export type PlayerTable = {
   position: string | null;
   country: string;
   date_of_birth: string | null;
+  source_ref: string;
 };
 
 export type MatchTable = {

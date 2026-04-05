@@ -31,7 +31,7 @@ export const getPlayerContext = async (db: DbClient, playerId: string) => {
       .select(["t.id as id", "t.name as name", "t.slug as slug"])
       .where("pct.player", "=", playerId)
       .groupBy(["t.id", "t.name", "t.slug"])
-      .orderBy("t.name asc")
+      .orderBy("t.name", "asc")
       .execute(),
     db
       .selectFrom("core.lineups as l")
@@ -52,7 +52,7 @@ export const getPlayerContext = async (db: DbClient, playerId: string) => {
         "l.rating as rating",
       ])
       .where("l.player", "=", playerId)
-      .orderBy("m.start_time desc")
+      .orderBy("m.start_time", "desc")
       .limit(5)
       .execute(),
     db
@@ -65,7 +65,7 @@ export const getPlayerContext = async (db: DbClient, playerId: string) => {
         "pms.stat_payload as statPayload",
       ])
       .where("pms.player", "=", playerId)
-      .orderBy("pms.match asc")
+      .orderBy("pms.match", "asc")
       .execute(),
   ]);
 

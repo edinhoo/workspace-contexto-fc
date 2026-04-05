@@ -15,6 +15,8 @@ Veja tambem: `docs/phase-2-closeout.md`
 Veja tambem: `docs/phase-3-plan-scraper-to-db.md`
 Veja tambem: `docs/phase-3-closeout.md`
 Veja tambem: `docs/phase-4-plan-data-api.md`
+Veja tambem: `docs/phase-4-closeout.md`
+Veja tambem: `docs/phase-4-validation-report.md`
 
 ## Objetivo
 
@@ -212,6 +214,10 @@ Concluida.
 
 Expor os primeiros modelos compostos para consumo de apps futuros.
 
+### Status
+
+Concluida.
+
 ### Entregaveis
 
 - `services/data-api`
@@ -247,6 +253,15 @@ Expor os primeiros modelos compostos para consumo de apps futuros.
 - manter a API orientada a entidade focal com dimensoes opcionais
 - nao incluir automacao, `Directus` ou autenticacao nesta fase
 - assumir que alguns contextos terao baixo volume no banco atual sem tratar isso como bug da API
+
+### Resultado consolidado
+
+- `services/data-api` criado e validado localmente
+- endpoints iniciais entregues: `health`, `search`, `matches/:id`, `teams/:id` e `players/:id`
+- contratos tipados e padrao de erro definidos
+- queries compostas implementadas sobre `core.*`
+- `read.*` ainda nao precisou ser materializado
+- suite inicial de testes com `6` testes aprovados, incluindo integracao com banco local
 
 ## Fase 5 - Planejamento e automacao da ingestao
 

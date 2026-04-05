@@ -1,6 +1,7 @@
 node_modules
 .turbo
 dist
+dist-test
 coverage
 *.tsbuildinfo
 .DS_Store
