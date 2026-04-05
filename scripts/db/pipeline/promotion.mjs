@@ -8,20 +8,39 @@ const buildUpsert = ({
   insertColumns,
   selectClause,
   conflictColumns,
-  updateColumns
+  updateColumns,
+  semanticDiffColumns = updateColumns.filter(
+    (column) => !["last_scraped_at", "updated_at"].includes(column)
+  )
 }) => `
 with source_rows as (
-  ${selectClause
-    .replace("where run_id = $RUN_ID$", "where run_id = $RUN_ID$ and validation_status = 'valid'")
-    .replaceAll("$RUN_ID$", sqlLiteral(runId))
-    .replace(/^select/i, "select")
-    .trim()}
+  select *
+  from (
+    ${selectClause
+      .replace("where run_id = $RUN_ID$", "where run_id = $RUN_ID$ and validation_status = 'valid'")
+      .replaceAll("$RUN_ID$", sqlLiteral(runId))
+      .replace(/^select/i, "select")
+      .trim()}
+  ) as raw_source_rows (${insertColumns.join(", ")})
+),
+classified_rows as (
+  select
+    source_rows.*,
+    target.${conflictColumns[0]} is null as will_insert,
+    case
+      when target.${conflictColumns[0]} is null then false
+      when ${semanticDiffColumns.length > 0 ? semanticDiffColumns.map((column) => `target.${column} is distinct from source_rows.${column}`).join("\n        or ") : "false"} then true
+      else false
+    end as semantic_change
+  from source_rows
+  left join ${coreTable} target
+    on ${conflictColumns.map((column) => `target.${column} is not distinct from source_rows.${column}`).join("\n    and ")}
 ),
 upserted as (
   insert into ${coreTable} (
     ${insertColumns.join(", ")}
   )
-  select * from source_rows
+  select ${insertColumns.join(", ")} from classified_rows
   on conflict (${conflictColumns.join(", ")}) do update
   set
     ${updateColumns.map((column) => `${column} = excluded.${column}`).join(",\n    ")}
@@ -49,12 +68,12 @@ select
   (select count(*) from ${coreTable.replace("core.", "staging.")} where run_id = ${sqlLiteral(runId)}),
   (select count(*) from ${coreTable.replace("core.", "staging.")} where run_id = ${sqlLiteral(runId)} and validation_status = 'valid'),
   (select count(*) from ${coreTable.replace("core.", "staging.")} where run_id = ${sqlLiteral(runId)} and validation_status = 'invalid'),
-  coalesce((select count(*) filter (where inserted) from upserted), 0),
-  coalesce((select count(*) filter (where updated) from upserted), 0),
+  coalesce((select count(*) from classified_rows where will_insert), 0),
+  coalesce((select count(*) from classified_rows where semantic_change), 0),
   greatest(
     (select count(*) from ${coreTable.replace("core.", "staging.")} where run_id = ${sqlLiteral(runId)} and validation_status = 'valid')
-    - coalesce((select count(*) filter (where inserted) from upserted), 0)
-    - coalesce((select count(*) filter (where updated) from upserted), 0),
+    - coalesce((select count(*) from classified_rows where will_insert), 0)
+    - coalesce((select count(*) from classified_rows where semantic_change), 0),
     0
   ),
   null,

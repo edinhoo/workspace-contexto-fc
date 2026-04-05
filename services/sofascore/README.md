@@ -10,6 +10,7 @@ Ele existe para:
 - normalizar relacionamentos entre entidades
 - salvar o resultado em CSVs locais
 - servir como camada intermediaria antes de um backend e banco definitivos
+- a partir da Fase 3, o CSV deixa de ser obrigatorio no fluxo operacional normal
 
 ## Comandos
 
@@ -17,16 +18,31 @@ Da raiz do monorepo:
 
 ```bash
 pnpm scrape:sofascore 15237889
+pnpm scrape:sofascore -- --target=csv 15237889
+pnpm scrape:sofascore -- --target=both 15237889
 ```
 
 Direto no servico:
 
 ```bash
 pnpm --filter @services/sofascore scrape 15237889
+pnpm --filter @services/sofascore scrape --target=csv 15237889
+pnpm --filter @services/sofascore scrape --target=both 15237889
 pnpm --filter @services/sofascore lint
 pnpm --filter @services/sofascore test
 pnpm --filter @services/sofascore typecheck
 ```
+
+Targets disponiveis:
+
+- `db`
+  - valor padrao
+  - usa `core.*` como referencia existente
+  - escreve o lote em `staging.*`, valida e promove para `core.*`
+- `csv`
+  - preserva o fluxo antigo de escrita local em arquivos
+- `both`
+  - grava CSV e banco na mesma execucao
 
 ## Arquitetura resumida
 
@@ -81,7 +97,7 @@ Partida:
 
 ## Fluxo geral
 
-1. carrega os CSVs existentes
+1. carrega o estado existente do target escolhido
 2. faz fetch dos metadados da partida
 3. faz fetch de lineups e average positions
 4. faz fetch de incidents e shotmap
@@ -89,7 +105,16 @@ Partida:
 6. faz upsert pela chave de origem mais estavel de cada tabela
 7. relinka referencias para IDs internos
 8. recalcula `team-match-stats` a partir de `player-match-stats`
-9. salva os CSVs normalizados
+9. persiste o snapshot normalizado no target escolhido
+
+No fluxo padrao atual:
+
+1. o scraper carrega o estado existente a partir de `core.*`
+2. produz o snapshot normalizado em memoria
+3. escreve em `staging.*`
+4. aciona validacao e promocao para `core.*`
+
+Os CSVs continuam disponiveis como saida opcional.
 
 ## Regras de persistencia
 
