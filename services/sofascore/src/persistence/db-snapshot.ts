@@ -32,7 +32,53 @@ const importModule = async <T>(relativePathFromRoot: string): Promise<T> => {
   return import(moduleUrl) as Promise<T>;
 };
 
+const assertNoDuplicateIdentityInBatch = async (
+  entityRowsByName: Record<string, Record<string, unknown>[]>
+) => {
+  const { ENTITY_CONFIGS } = await importModule<{
+    ENTITY_CONFIGS: Array<{ entity: string; naturalKey: string[] }>;
+  }>("scripts/db/pipeline/entities.mjs");
+
+  const problems: string[] = [];
+
+  for (const config of ENTITY_CONFIGS) {
+    const rows = entityRowsByName[config.entity] ?? [];
+    const seenKeys = new Map<string, number>();
+
+    for (const row of rows) {
+      const compositeKey = config.naturalKey
+        .map((field) => String(row[field] ?? "").trim())
+        .join("|");
+
+      if (!compositeKey || compositeKey.split("|").every((part) => part.length === 0)) {
+        continue;
+      }
+
+      const nextCount = (seenKeys.get(compositeKey) ?? 0) + 1;
+      seenKeys.set(compositeKey, nextCount);
+    }
+
+    for (const [compositeKey, count] of seenKeys.entries()) {
+      if (count < 2) {
+        continue;
+      }
+
+      problems.push(
+        `${config.entity}: identidade duplicada para [${config.naturalKey.join(", ")}] => ${compositeKey}`
+      );
+    }
+  }
+
+  if (problems.length > 0) {
+    throw new Error(
+      `O lote do scraper contem duplicidade de identidade antes da promocao:\n- ${problems.join("\n- ")}`
+    );
+  }
+};
+
 export const saveSnapshotToDatabase = async (snapshot: SofascoreSnapshot) => {
+  const repoRoot = findRepoRoot();
+  const originalCwd = process.cwd();
   const [{ loadRunToStagingFromEntityRows }, { validateRun, getValidationSummary }, { promoteRun }, { runPsqlQuery }] =
     await Promise.all([
       importModule<{
@@ -53,40 +99,71 @@ export const saveSnapshotToDatabase = async (snapshot: SofascoreSnapshot) => {
       importModule<{ runPsqlQuery: (sql: string) => string }>("scripts/db/_shared.mjs")
     ]);
 
-  const { runId, ingestedAt } = loadRunToStagingFromEntityRows({
-    entityRowsByName: toEntityRows(snapshot),
-    source: "sofascore"
-  });
+  const entityRowsByName = toEntityRows(snapshot);
 
-  validateRun(runId);
+  await assertNoDuplicateIdentityInBatch(entityRowsByName);
 
-  const summary = getValidationSummary(runId);
+  process.chdir(repoRoot);
 
-  if (hasInvalidEntities(summary)) {
-    const invalidEntities = summary.filter((item) => item.rowsInvalid > 0);
-    const escapedErrors = JSON.stringify(invalidEntities).replaceAll("'", "''");
+  try {
+    const { runId, ingestedAt } = loadRunToStagingFromEntityRows({
+      entityRowsByName,
+      source: "sofascore"
+    });
 
-    runPsqlQuery(`
-      update ops.ingestion_runs
-      set
-        status = 'failed',
-        finished_at = now(),
-        validation_errors = '${escapedErrors}'::jsonb
-      where run_id = '${runId}';
-    `);
+    try {
+      validateRun(runId);
 
-    throw new Error(
-      `A ingestao do scraper foi bloqueada por entidades invalidas: ${invalidEntities
-        .map((item) => `${item.entity}=${item.rowsInvalid}`)
-        .join(", ")}`
-    );
+      const summary = getValidationSummary(runId);
+
+      if (hasInvalidEntities(summary)) {
+        const invalidEntities = summary.filter((item) => item.rowsInvalid > 0);
+        const escapedErrors = JSON.stringify(invalidEntities).replaceAll("'", "''");
+
+        runPsqlQuery(`
+          update ops.ingestion_runs
+          set
+            status = 'failed',
+            finished_at = now(),
+            validation_errors = '${escapedErrors}'::jsonb
+          where run_id = '${runId}';
+        `);
+
+        throw new Error(
+          `A ingestao do scraper foi bloqueada por entidades invalidas: ${invalidEntities
+            .map((item) => `${item.entity}=${item.rowsInvalid}`)
+            .join(", ")}`
+        );
+      }
+
+      promoteRun(runId);
+
+      return {
+        runId,
+        ingestedAt,
+        summary
+      };
+    } catch (error) {
+      const errorPayload = JSON.stringify([
+        {
+          stage: "scraper-db-save",
+          message: error instanceof Error ? error.message : String(error)
+        }
+      ]).replaceAll("'", "''");
+
+      runPsqlQuery(`
+        update ops.ingestion_runs
+        set
+          status = 'failed',
+          finished_at = now(),
+          validation_errors = '${errorPayload}'::jsonb
+        where run_id = '${runId}'
+          and status <> 'completed';
+      `);
+
+      throw error;
+    }
+  } finally {
+    process.chdir(originalCwd);
   }
-
-  promoteRun(runId);
-
-  return {
-    runId,
-    ingestedAt,
-    summary
-  };
 };

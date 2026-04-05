@@ -1,8 +1,10 @@
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const WORKDIR = resolve(process.cwd());
+const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
+const WORKDIR = resolve(SCRIPT_DIR, "../..");
 const COMPOSE_FILE = "infra/docker/docker-compose.yml";
 const DB_NAME = "contexto_fc";
 const DB_USER = "contexto_fc";
