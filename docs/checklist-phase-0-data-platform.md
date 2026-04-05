@@ -9,6 +9,7 @@ Este checklist nao implica implementacao imediata. Ele existe para orientar a fu
 Veja tambem: `docs/data-platform-contract.md`
 Veja tambem: `docs/data-platform-schema-design.md`
 Veja tambem: `docs/data-platform-constraints-matrix.md`
+Veja tambem: `docs/data-platform-ddl-proposal.md`
 
 ## Definicao de pronto da Fase 0
 
