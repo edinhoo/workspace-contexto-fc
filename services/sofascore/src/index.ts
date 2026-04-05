@@ -10,7 +10,45 @@ type CliOptions = {
   target: ScrapeTarget;
 };
 
+type ProcessedCounts = {
+  countries: number;
+  cities: number;
+  events: number;
+  stadiums: number;
+  teams: number;
+  managers: number;
+  lineups: number;
+  matches: number;
+  playerMatchStats: number;
+  playerCareerTeams: number;
+  teamMatchStats: number;
+  players: number;
+  referees: number;
+  tournaments: number;
+  seasons: number;
+};
+
+type StructuredScrapeResult =
+  | {
+      status: "success";
+      target: ScrapeTarget;
+      eventIds: string[];
+      runId: string | null;
+      validationStatus: "valid" | "not_applicable";
+      processedCounts: ProcessedCounts;
+    }
+  | {
+      status: "failure";
+      target: ScrapeTarget;
+      eventIds: string[];
+      runId: null;
+      validationStatus: "invalid" | "unknown";
+      errorKind: "validation_failure" | "runtime_error";
+      errorMessage: string;
+    };
+
 const cliOptions = parseCliOptions(process.argv.slice(2));
+const STRUCTURED_RESULT_PREFIX = "SCRAPE_RESULT ";
 
 if (cliOptions.eventIds.length === 0) {
   console.error(
@@ -19,7 +57,14 @@ if (cliOptions.eventIds.length === 0) {
   process.exit(1);
 }
 
-const run = async (): Promise<void> => {
+const isValidationFailure = (message: string): boolean =>
+  message.includes("bloqueada por entidades invalidas");
+
+const emitStructuredResult = (payload: StructuredScrapeResult): void => {
+  console.log(`${STRUCTURED_RESULT_PREFIX}${JSON.stringify(payload)}`);
+};
+
+const run = async (): Promise<{ processedCounts: ProcessedCounts; persistedRunId: string | null }> => {
   const existingSnapshot =
     cliOptions.target === "csv" ? await loadCsvSnapshot() : loadCoreDbSnapshot();
 
@@ -60,9 +105,41 @@ const run = async (): Promise<void> => {
   console.log(`referees processados: ${processedCounts.referees}`);
   console.log(`tournaments processados: ${processedCounts.tournaments}`);
   console.log(`seasons processadas: ${processedCounts.seasons}`);
+
+  return {
+    processedCounts,
+    persistedRunId
+  };
 };
 
-await run();
+try {
+  const { processedCounts, persistedRunId } = await run();
+
+  emitStructuredResult({
+    status: "success",
+    target: cliOptions.target,
+    eventIds: cliOptions.eventIds,
+    runId: persistedRunId,
+    validationStatus: cliOptions.target === "csv" ? "not_applicable" : "valid",
+    processedCounts
+  });
+} catch (error) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+
+  console.error(errorMessage);
+
+  emitStructuredResult({
+    status: "failure",
+    target: cliOptions.target,
+    eventIds: cliOptions.eventIds,
+    runId: null,
+    validationStatus: isValidationFailure(errorMessage) ? "invalid" : "unknown",
+    errorKind: isValidationFailure(errorMessage) ? "validation_failure" : "runtime_error",
+    errorMessage
+  });
+
+  process.exitCode = 1;
+}
 
 function parseCliOptions(argv: string[]): CliOptions {
   let target: ScrapeTarget = "db";

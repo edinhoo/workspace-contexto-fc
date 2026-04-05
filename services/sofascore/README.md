@@ -116,6 +116,22 @@ No fluxo padrao atual:
 
 Os CSVs continuam disponiveis como saida opcional.
 
+## Contrato operacional de saida
+
+No fim de cada execucao, o scraper escreve uma ultima linha estruturada no `stdout`:
+
+```text
+SCRAPE_RESULT {"status":"success","target":"db","runId":"sofascore-...","validationStatus":"valid",...}
+```
+
+Objetivo:
+
+- manter a saida humana legivel durante a execucao
+- dar ao scheduler um contrato estavel para capturar `runId`, status e falhas
+
+Quando houver erro, a ultima linha continua seguindo o mesmo prefixo `SCRAPE_RESULT `,
+mas com `status: "failure"` e classificacao minima da falha.
+
 ## Regras de persistencia
 
 - `id` e sempre interno ao projeto
