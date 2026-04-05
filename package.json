@@ -19,7 +19,8 @@
     "docker:down": "docker compose -f infra/docker/docker-compose.yml down",
     "db:migrate": "node scripts/db/migrate.mjs",
     "db:bootstrap:phase1": "node scripts/db/bootstrap-phase1.mjs",
-    "db:validate:phase1": "node scripts/db/validate-phase1.mjs"
+    "db:validate:phase1": "node scripts/db/validate-phase1.mjs",
+    "db:validate:phase2": "node scripts/db/validate-phase2.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.24.0",
