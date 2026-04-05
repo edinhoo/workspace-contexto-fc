@@ -22,6 +22,10 @@ Veja tambem: `docs/phase-5-automation-states.md`
 Veja tambem: `docs/phase-5-validation-report.md`
 Veja tambem: `docs/phase-5-closeout.md`
 Veja tambem: `docs/phase-7-plan-robustness-and-scale.md`
+Veja tambem: `docs/phase-7-performance-review.md`
+Veja tambem: `docs/phase-7-source-extension-notes.md`
+Veja tambem: `docs/phase-7-validation-report.md`
+Veja tambem: `docs/phase-7-closeout.md`
 
 ## Objetivo
 

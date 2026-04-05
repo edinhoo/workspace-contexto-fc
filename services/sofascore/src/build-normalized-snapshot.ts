@@ -74,40 +74,65 @@ export const buildNormalizedSnapshot = async (
       } catch (error) {
         const message = formatErrorMessage(error);
         console.error(`Falha ao processar o evento ${eventId}: ${message}`);
-        return null;
+        return {
+          eventId,
+          error: message,
+          eventMetadata: null,
+          lineupMetadata: null,
+          incidentsMetadata: null
+        };
       }
     })
   );
 
-  const validCountries = fetchedData
+  const failedEventIds = fetchedData
+    .filter((entry) => entry?.eventMetadata === null)
+    .map((entry) => entry?.eventId)
+    .filter((eventId): eventId is string => Boolean(eventId));
+
+  if (failedEventIds.length > 0) {
+    throw new Error(
+      `Falha ao processar todos os dados necessarios para os eventos: ${failedEventIds.join(", ")}`
+    );
+  }
+
+  const successfulEntries = fetchedData.filter(
+    (entry): entry is NonNullable<typeof entry> & {
+      eventMetadata: NonNullable<NonNullable<typeof entry>["eventMetadata"]>;
+      lineupMetadata: NonNullable<NonNullable<typeof entry>["lineupMetadata"]>;
+      incidentsMetadata: NonNullable<NonNullable<typeof entry>["incidentsMetadata"]>;
+    } => entry.eventMetadata !== null && entry.lineupMetadata !== null && entry.incidentsMetadata !== null
+  );
+
+  const validCountries = successfulEntries
     .flatMap((entry) => [
-      ...(entry?.eventMetadata.countries ?? []),
-      ...(entry?.lineupMetadata.countries ?? [])
+      ...entry.eventMetadata.countries,
+      ...entry.lineupMetadata.countries
     ])
     .filter((country): country is CountryRecord => country !== null);
-  const validTournaments = fetchedData
-    .map((entry) => entry?.eventMetadata.tournament ?? null)
+  const validTournaments = successfulEntries
+    .map((entry) => entry.eventMetadata.tournament)
     .filter((tournament): tournament is TournamentRecord => tournament !== null);
-  const validCities = fetchedData
-    .flatMap((entry) => entry?.eventMetadata.cities ?? [])
+  const validCities = successfulEntries
+    .flatMap((entry) => entry.eventMetadata.cities)
     .filter((city): city is CityRecord => city !== null);
-  const validEvents = fetchedData
-    .flatMap((entry) => entry?.incidentsMetadata.events ?? [])
+  const validEvents = successfulEntries
+    .flatMap((entry) => entry.incidentsMetadata.events)
     .filter((event): event is EventRecord => event !== null);
-  const validSeasons = fetchedData
-    .map((entry) => entry?.eventMetadata.season ?? null)
+  const validSeasons = successfulEntries
+    .map((entry) => entry.eventMetadata.season)
     .filter((season): season is SeasonRecord => season !== null);
-  const validStadiums = fetchedData
-    .flatMap((entry) => entry?.eventMetadata.stadiums ?? [])
+  const validStadiums = successfulEntries
+    .flatMap((entry) => entry.eventMetadata.stadiums)
     .filter((stadium): stadium is StadiumRecord => stadium !== null);
-  const validReferees = fetchedData
-    .map((entry) => entry?.eventMetadata.referee ?? null)
+  const validReferees = successfulEntries
+    .map((entry) => entry.eventMetadata.referee)
     .filter((referee): referee is RefereeRecord => referee !== null);
-  const validManagers = fetchedData.flatMap((entry) => entry?.eventMetadata.managers ?? []);
-  const validLineups = fetchedData.flatMap((entry) => entry?.lineupMetadata.lineups ?? []);
-  const validMatches = fetchedData
+  const validManagers = successfulEntries.flatMap((entry) => entry.eventMetadata.managers);
+  const validLineups = successfulEntries.flatMap((entry) => entry.lineupMetadata.lineups);
+  const validMatches = successfulEntries
     .map((entry) => {
-      if (!entry?.eventMetadata.match) {
+      if (!entry.eventMetadata.match) {
         return null;
       }
 
@@ -118,11 +143,11 @@ export const buildNormalizedSnapshot = async (
       };
     })
     .filter((match): match is MatchRecord => match !== null);
-  const validPlayerMatchStats = fetchedData.flatMap(
-    (entry) => entry?.lineupMetadata.playerMatchStats ?? []
+  const validPlayerMatchStats = successfulEntries.flatMap(
+    (entry) => entry.lineupMetadata.playerMatchStats
   );
-  const validPlayers = fetchedData.flatMap((entry) => entry?.lineupMetadata.players ?? []);
-  const validTeams = fetchedData.flatMap((entry) => entry?.eventMetadata.teams ?? []);
+  const validPlayers = successfulEntries.flatMap((entry) => entry.lineupMetadata.players);
+  const validTeams = successfulEntries.flatMap((entry) => entry.eventMetadata.teams);
   const validPlayerCareerTeams = buildPlayerCareerTeamRelationships(validLineups);
 
   const mergedCountries = upsertCountries(existingSnapshot.countries, validCountries);
