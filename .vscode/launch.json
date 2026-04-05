@@ -1,0 +1,41 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Database: Start Postgres",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm docker:up"
+    },
+    {
+      "name": "Database: Stop Postgres",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm docker:down"
+    },
+    {
+      "name": "Database: Migrate",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm db:migrate"
+    },
+    {
+      "name": "Database: Ingest Phase 2",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm db:ingest:phase2"
+    },
+    {
+      "name": "Database: Validate Phase 2",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm db:validate:phase2"
+    },
+    {
+      "name": "Database: Dry Run Phase 2",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm db:dry-run:phase2"
+    }
+  ]
+}

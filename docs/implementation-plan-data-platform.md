@@ -10,6 +10,8 @@ Veja tambem: `docs/data-platform-ddl-v1.md`
 Veja tambem: `docs/phase-0-decisions-for-validation.md`
 Veja tambem: `docs/phase-1-plan-bootstrap-and-db.md`
 Veja tambem: `docs/phase-1-closeout.md`
+Veja tambem: `docs/phase-2-plan-ingestion-pipeline.md`
+Veja tambem: `docs/phase-2-closeout.md`
 
 ## Objetivo
 
@@ -117,6 +119,10 @@ Concluida.
 
 Criar o fluxo permanente de ingestao no banco com staging, validacao e promocao.
 
+### Status
+
+Concluida.
+
 ### Entregaveis
 
 - tabelas `staging.*`
@@ -127,11 +133,13 @@ Criar o fluxo permanente de ingestao no banco com staging, validacao e promocao.
 
 ### Tarefas
 
-- modelar `staging.*` para as entidades ingeridas pelo scraper
+- confirmar compatibilidade entre payload real do scraper e `staging.*`
 - implementar validacoes automaticas reutilizando as regras ja consolidadas no projeto
 - implementar promocao controlada para `core.*`
+- definir politica explicita de idempotencia para o canonico
 - registrar resultado de cada execucao em `ingestion_runs`
-- adicionar diffs e contadores por lote
+- adicionar `ops.ingestion_run_details` com contadores por entidade
+- implementar `dry-run` com validacao, relatorio e `rollback`
 
 ### Dependencias
 
@@ -142,6 +150,17 @@ Criar o fluxo permanente de ingestao no banco com staging, validacao e promocao.
 - uma execucao falha nao altera `core.*`
 - a mesma execucao pode ser repetida sem duplicar dados
 - existe visibilidade clara do que mudou em cada lote
+- existe `dry-run` confiavel sem impacto em `core.*`
+
+### Resultado consolidado
+
+- compatibilidade entre o payload do scraper e `staging.*` confirmada
+- validacao reutilizavel por entidade implementada
+- promocao transacional para `core.*` implementada
+- `ops.ingestion_run_details` materializado e populado por execucao
+- primeira ingestao concluida com `354` insercoes e `0` invalidacoes
+- segunda ingestao sem duplicidade no canonico
+- `dry-run` validado com `rollback` explicito e relatorio proprio
 
 ## Fase 3 - Migracao do scraper para o banco
 

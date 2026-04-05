@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Database: Start Postgres",
+      "type": "shell",
+      "command": "pnpm docker:up",
+      "problemMatcher": []
+    },
+    {
+      "label": "Database: Stop Postgres",
+      "type": "shell",
+      "command": "pnpm docker:down",
+      "problemMatcher": []
+    },
+    {
+      "label": "Database: Migrate",
+      "type": "shell",
+      "command": "pnpm db:migrate",
+      "problemMatcher": []
+    },
+    {
+      "label": "Database: Ingest Phase 2",
+      "type": "shell",
+      "command": "pnpm db:ingest:phase2",
+      "problemMatcher": []
+    },
+    {
+      "label": "Database: Validate Phase 2",
+      "type": "shell",
+      "command": "pnpm db:validate:phase2",
+      "problemMatcher": []
+    },
+    {
+      "label": "Database: Dry Run Phase 2",
+      "type": "shell",
+      "command": "pnpm db:dry-run:phase2",
+      "problemMatcher": []
+    }
+  ]
+}

@@ -17,9 +17,12 @@
     "format:write": "prettier --write .",
     "docker:up": "docker compose -f infra/docker/docker-compose.yml up -d",
     "docker:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "db:dry-run:phase2": "node scripts/db/dry-run-phase2.mjs",
     "db:migrate": "node scripts/db/migrate.mjs",
     "db:bootstrap:phase1": "node scripts/db/bootstrap-phase1.mjs",
-    "db:validate:phase1": "node scripts/db/validate-phase1.mjs"
+    "db:ingest:phase2": "node scripts/db/ingest-phase2.mjs",
+    "db:validate:phase1": "node scripts/db/validate-phase1.mjs",
+    "db:validate:phase2": "node scripts/db/validate-phase2.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.24.0",
