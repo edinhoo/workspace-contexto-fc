@@ -14,6 +14,9 @@ Veja tambem: `docs/phase-2-plan-ingestion-pipeline.md`
 Veja tambem: `docs/phase-2-closeout.md`
 Veja tambem: `docs/phase-3-plan-scraper-to-db.md`
 Veja tambem: `docs/phase-3-closeout.md`
+Veja tambem: `docs/phase-4-plan-data-api.md`
+Veja tambem: `docs/phase-4-closeout.md`
+Veja tambem: `docs/phase-4-validation-report.md`
 
 ## Objetivo
 
@@ -186,9 +189,6 @@ Concluida.
 - preservar normalizacao e regras semanticas ja existentes
 - comparar o resultado do scraper novo com o bootstrap validado na Fase 1
 - manter logs e rastreabilidade da origem
-- adicionar erro claro para duplicidade de `source_ref` no lote
-- melhorar a leitura de diff para separar mudanca semantica de refresh operacional, quando viavel
-- manter a primeira versao da migracao com execucao serial, sem concorrencia entre lotes
 
 ### Dependencias
 
@@ -199,22 +199,24 @@ Concluida.
 - o scraper popula o banco de forma consistente
 - os resultados batem com a referencia validada
 - CSV deixa de ser obrigatorio no fluxo normal
-- a execucao do scraper falha cedo quando houver problema de identidade no lote
-- a leitura do resultado da ingestao evita ambiguidade relevante entre update semantico e refresh operacional
 
 ### Resultado consolidado
 
-- o scraper passou a escrever em `staging.*` via pipeline do banco
-- a execucao real foi validada com o `eventId` `15237889`
-- primeiro run com `251` insercoes e `0` invalidacoes
-- segundo run com `0` insercoes e `0` updates semanticos
-- a referencia principal de `matches`, `lineups`, `player_match_stats`, `team_match_stats` e `events` bateu com o recorte conhecido
+- `services/sofascore` integrado ao pipeline permanente do banco
+- escrita em `staging.*` sem intermediario CSV obrigatorio
+- erro cedo para conflitos de identidade no lote
+- segunda execucao do mesmo snapshot com `0` updates semanticos e `251` registros marcados como `skipped`
+- validacao concluida com recorte controlado do evento `15237889`
 
 ## Fase 4 - API de leitura e contextos
 
 ### Objetivo
 
 Expor os primeiros modelos compostos para consumo de apps futuros.
+
+### Status
+
+Concluida.
 
 ### Entregaveis
 
@@ -228,9 +230,11 @@ Expor os primeiros modelos compostos para consumo de apps futuros.
 
 - criar o servico `data-api`
 - configurar `Fastify`, `Kysely` e `zod`
-- implementar endpoints iniciais como `teams`, `matches`, `players` e `search`
+- implementar endpoints iniciais como `health`, `search`, `matches`, `teams` e `players`
 - encapsular consultas compostas na camada `read`
 - definir padroes de paginação, filtros e erros
+- definir `search` com discriminador explicito de tipo na resposta
+- cobrir contratos de rota e queries criticas desde a primeira iteracao
 
 ### Dependencias
 
@@ -241,6 +245,23 @@ Expor os primeiros modelos compostos para consumo de apps futuros.
 - a API responde com modelos de contexto, nao apenas CRUD bruto
 - as consultas principais usam `core.*` e `read.*` de forma previsivel
 - existe cobertura inicial para contratos e consultas criticas
+
+### Precisao de escopo
+
+- comecar com `core.*` como base padrao de leitura
+- introduzir `read.*` apenas onde houver ganho claro de reuso ou clareza
+- manter a API orientada a entidade focal com dimensoes opcionais
+- nao incluir automacao, `Directus` ou autenticacao nesta fase
+- assumir que alguns contextos terao baixo volume no banco atual sem tratar isso como bug da API
+
+### Resultado consolidado
+
+- `services/data-api` criado e validado localmente
+- endpoints iniciais entregues: `health`, `search`, `matches/:id`, `teams/:id` e `players/:id`
+- contratos tipados e padrao de erro definidos
+- queries compostas implementadas sobre `core.*`
+- `read.*` ainda nao precisou ser materializado
+- suite inicial de testes com `6` testes aprovados, incluindo integracao com banco local
 
 ## Fase 5 - Planejamento e automacao da ingestao
 
