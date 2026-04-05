@@ -49,6 +49,15 @@ pnpm test
 pnpm typecheck
 ```
 
+Para a Fase 1 da plataforma de dados:
+
+```bash
+pnpm docker:up
+pnpm db:migrate
+pnpm db:bootstrap:phase1
+pnpm docker:down
+```
+
 3. Scripts utilitarios equivalentes:
 
 ```bash
