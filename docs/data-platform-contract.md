@@ -420,3 +420,4 @@ O proximo passo natural dentro da Fase 0 e detalhar:
 - desenho tabular inicial de `staging.*`
 - constraints obrigatorias por entidade
 - classificacao entre erro bloqueante e warning operacional
+- proposta inicial da matriz de constraints e validacoes

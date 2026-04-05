@@ -7,6 +7,7 @@ Detalhar o desenho tabular inicial de `core.*` e `staging.*` para a Fase 0, sem 
 Este documento complementa:
 
 - `docs/data-platform-contract.md`
+- `docs/data-platform-constraints-matrix.md`
 - `docs/implementation-plan-data-platform.md`
 - `docs/checklist-phase-0-data-platform.md`
 
