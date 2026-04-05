@@ -11,6 +11,7 @@ Veja tambem: `docs/phase-0-decisions-for-validation.md`
 Veja tambem: `docs/phase-1-plan-bootstrap-and-db.md`
 Veja tambem: `docs/phase-1-closeout.md`
 Veja tambem: `docs/phase-2-plan-ingestion-pipeline.md`
+Veja tambem: `docs/phase-2-closeout.md`
 
 ## Objetivo
 
@@ -118,6 +119,10 @@ Concluida.
 
 Criar o fluxo permanente de ingestao no banco com staging, validacao e promocao.
 
+### Status
+
+Concluida.
+
 ### Entregaveis
 
 - tabelas `staging.*`
@@ -146,6 +151,16 @@ Criar o fluxo permanente de ingestao no banco com staging, validacao e promocao.
 - a mesma execucao pode ser repetida sem duplicar dados
 - existe visibilidade clara do que mudou em cada lote
 - existe `dry-run` confiavel sem impacto em `core.*`
+
+### Resultado consolidado
+
+- compatibilidade entre o payload do scraper e `staging.*` confirmada
+- validacao reutilizavel por entidade implementada
+- promocao transacional para `core.*` implementada
+- `ops.ingestion_run_details` materializado e populado por execucao
+- primeira ingestao concluida com `354` insercoes e `0` invalidacoes
+- segunda ingestao sem duplicidade no canonico
+- `dry-run` validado com `rollback` explicito e relatorio proprio
 
 ## Fase 3 - Migracao do scraper para o banco
 

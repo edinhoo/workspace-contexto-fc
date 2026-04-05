@@ -19,30 +19,34 @@ const VALIDATION_QUERIES = {
   cities: `
     select count(*)
     from staging.cities c
-    left join core.countries country on country.id = c.country
+    left join core.countries core_country on core_country.id = c.country
+    left join staging.countries staging_country on staging_country.id = c.country and staging_country.run_id = $RUN_ID$
     where c.run_id = $RUN_ID$
-      and (c.source_ref is null or c.name is null or country.id is null);
+      and (c.source_ref is null or c.name is null or (core_country.id is null and staging_country.id is null));
   `,
   stadiums: `
     select count(*)
     from staging.stadiums s
-    left join core.cities c on c.id = s.city
+    left join core.cities core_city on core_city.id = s.city
+    left join staging.cities staging_city on staging_city.id = s.city and staging_city.run_id = $RUN_ID$
     where s.run_id = $RUN_ID$
-      and (s.source_ref is null or s.name is null or c.id is null);
+      and (s.source_ref is null or s.name is null or (core_city.id is null and staging_city.id is null));
   `,
   tournaments: `
     select count(*)
     from staging.tournaments t
-    left join core.countries c on c.id = t.country
+    left join core.countries core_country on core_country.id = t.country
+    left join staging.countries staging_country on staging_country.id = t.country and staging_country.run_id = $RUN_ID$
     where t.run_id = $RUN_ID$
-      and (t.source_ref is null or t.name is null or c.id is null);
+      and (t.source_ref is null or t.name is null or (core_country.id is null and staging_country.id is null));
   `,
   seasons: `
     select count(*)
     from staging.seasons s
-    left join core.tournaments t on t.id = s.tournament
+    left join core.tournaments core_tournament on core_tournament.id = s.tournament
+    left join staging.tournaments staging_tournament on staging_tournament.id = s.tournament and staging_tournament.run_id = $RUN_ID$
     where s.run_id = $RUN_ID$
-      and (s.source_ref is null or s.name is null or t.id is null);
+      and (s.source_ref is null or s.name is null or (core_tournament.id is null and staging_tournament.id is null));
   `,
   referees: `
     select count(*)
@@ -59,116 +63,137 @@ const VALIDATION_QUERIES = {
   teams: `
     select count(*)
     from staging.teams t
-    left join core.stadiums s on s.id = t.stadium
+    left join core.stadiums core_stadium on core_stadium.id = t.stadium
+    left join staging.stadiums staging_stadium on staging_stadium.id = t.stadium and staging_stadium.run_id = $RUN_ID$
     where t.run_id = $RUN_ID$
       and (
         t.source_ref is null
         or t.name is null
-        or (t.stadium is not null and t.stadium <> '' and s.id is null)
+        or (t.stadium is not null and t.stadium <> '' and core_stadium.id is null and staging_stadium.id is null)
       );
   `,
   players: `
     select count(*)
     from staging.players p
-    left join core.countries c on c.id = p.country
+    left join core.countries core_country on core_country.id = p.country
+    left join staging.countries staging_country on staging_country.id = p.country and staging_country.run_id = $RUN_ID$
     where p.run_id = $RUN_ID$
-      and (p.source_ref is null or p.name is null or c.id is null);
+      and (p.source_ref is null or p.name is null or (core_country.id is null and staging_country.id is null));
   `,
   matches: `
     select count(*)
     from staging.matches m
-    left join core.tournaments t on t.id = m.tournament
-    left join core.seasons s on s.id = m.season
-    left join core.teams ht on ht.id = m.home_team
-    left join core.teams at on at.id = m.away_team
+    left join core.tournaments core_tournament on core_tournament.id = m.tournament
+    left join staging.tournaments staging_tournament on staging_tournament.id = m.tournament and staging_tournament.run_id = $RUN_ID$
+    left join core.seasons core_season on core_season.id = m.season
+    left join staging.seasons staging_season on staging_season.id = m.season and staging_season.run_id = $RUN_ID$
+    left join core.teams core_home_team on core_home_team.id = m.home_team
+    left join staging.teams staging_home_team on staging_home_team.id = m.home_team and staging_home_team.run_id = $RUN_ID$
+    left join core.teams core_away_team on core_away_team.id = m.away_team
+    left join staging.teams staging_away_team on staging_away_team.id = m.away_team and staging_away_team.run_id = $RUN_ID$
     where m.run_id = $RUN_ID$
       and (
         m.source_ref is null
         or m.start_time is null
-        or t.id is null
-        or s.id is null
-        or ht.id is null
-        or at.id is null
+        or (core_tournament.id is null and staging_tournament.id is null)
+        or (core_season.id is null and staging_season.id is null)
+        or (core_home_team.id is null and staging_home_team.id is null)
+        or (core_away_team.id is null and staging_away_team.id is null)
       );
   `,
   lineups: `
     select count(*)
     from staging.lineups l
-    left join core.matches m on m.id = l.match
-    left join core.teams t on t.id = l.team
-    left join core.players p on p.id = l.player
+    left join core.matches core_match on core_match.id = l.match
+    left join staging.matches staging_match on staging_match.id = l.match and staging_match.run_id = $RUN_ID$
+    left join core.teams core_team on core_team.id = l.team
+    left join staging.teams staging_team on staging_team.id = l.team and staging_team.run_id = $RUN_ID$
+    left join core.players core_player on core_player.id = l.player
+    left join staging.players staging_player on staging_player.id = l.player and staging_player.run_id = $RUN_ID$
     where l.run_id = $RUN_ID$
       and (
         l.source_match_id is null
         or l.source_team_id is null
         or l.source_player_id is null
-        or m.id is null
-        or t.id is null
-        or p.id is null
+        or (core_match.id is null and staging_match.id is null)
+        or (core_team.id is null and staging_team.id is null)
+        or (core_player.id is null and staging_player.id is null)
       );
   `,
   player_match_stats: `
     select count(*)
     from staging.player_match_stats s
-    left join core.matches m on m.id = s.match
-    left join core.teams t on t.id = s.team
-    left join core.players p on p.id = s.player
+    left join core.matches core_match on core_match.id = s.match
+    left join staging.matches staging_match on staging_match.id = s.match and staging_match.run_id = $RUN_ID$
+    left join core.teams core_team on core_team.id = s.team
+    left join staging.teams staging_team on staging_team.id = s.team and staging_team.run_id = $RUN_ID$
+    left join core.players core_player on core_player.id = s.player
+    left join staging.players staging_player on staging_player.id = s.player and staging_player.run_id = $RUN_ID$
     where s.run_id = $RUN_ID$
       and (
         s.source_match_id is null
         or s.source_team_id is null
         or s.source_player_id is null
         or s.stat_payload is null
-        or m.id is null
-        or t.id is null
-        or p.id is null
+        or (core_match.id is null and staging_match.id is null)
+        or (core_team.id is null and staging_team.id is null)
+        or (core_player.id is null and staging_player.id is null)
       );
   `,
   team_match_stats: `
     select count(*)
     from staging.team_match_stats s
-    left join core.matches m on m.id = s.match
-    left join core.teams t on t.id = s.team
+    left join core.matches core_match on core_match.id = s.match
+    left join staging.matches staging_match on staging_match.id = s.match and staging_match.run_id = $RUN_ID$
+    left join core.teams core_team on core_team.id = s.team
+    left join staging.teams staging_team on staging_team.id = s.team and staging_team.run_id = $RUN_ID$
     where s.run_id = $RUN_ID$
       and (
         s.source_match_id is null
         or s.source_team_id is null
         or s.stat_payload is null
-        or m.id is null
-        or t.id is null
+        or (core_match.id is null and staging_match.id is null)
+        or (core_team.id is null and staging_team.id is null)
       );
   `,
   events: `
     select count(*)
     from staging.events e
-    left join core.matches m on m.id = e.match
-    left join core.teams t on t.id = e.team
-    left join core.players p on p.id = e.player
-    left join core.players rp on rp.id = e.related_player
-    left join core.managers mgr on mgr.id = e.manager
+    left join core.matches core_match on core_match.id = e.match
+    left join staging.matches staging_match on staging_match.id = e.match and staging_match.run_id = $RUN_ID$
+    left join core.teams core_team on core_team.id = e.team
+    left join staging.teams staging_team on staging_team.id = e.team and staging_team.run_id = $RUN_ID$
+    left join core.players core_player on core_player.id = e.player
+    left join staging.players staging_player on staging_player.id = e.player and staging_player.run_id = $RUN_ID$
+    left join core.players core_related_player on core_related_player.id = e.related_player
+    left join staging.players staging_related_player on staging_related_player.id = e.related_player and staging_related_player.run_id = $RUN_ID$
+    left join core.managers core_manager on core_manager.id = e.manager
+    left join staging.managers staging_manager on staging_manager.id = e.manager and staging_manager.run_id = $RUN_ID$
     where e.run_id = $RUN_ID$
       and (
         e.source_match_id is null
         or e.source_incident_id is null
         or e.incident_type is null
-        or m.id is null
-        or (e.team is not null and e.team <> '' and t.id is null)
-        or (e.player is not null and e.player <> '' and p.id is null)
-        or (e.related_player is not null and e.related_player <> '' and rp.id is null)
-        or (e.manager is not null and e.manager <> '' and mgr.id is null)
+        or (core_match.id is null and staging_match.id is null)
+        or (e.team is not null and e.team <> '' and core_team.id is null and staging_team.id is null)
+        or (e.player is not null and e.player <> '' and core_player.id is null and staging_player.id is null)
+        or (e.related_player is not null and e.related_player <> '' and core_related_player.id is null and staging_related_player.id is null)
+        or (e.manager is not null and e.manager <> '' and core_manager.id is null and staging_manager.id is null)
       );
   `,
   player_career_teams: `
     select count(*)
     from staging.player_career_teams pct
-    left join core.players p on p.id = pct.player
-    left join core.teams t on t.id = pct.team
+    left join core.players core_player on core_player.id = pct.player
+    left join staging.players staging_player on staging_player.id = pct.player and staging_player.run_id = $RUN_ID$
+    left join core.teams core_team on core_team.id = pct.team
+    left join staging.teams staging_team on staging_team.id = pct.team and staging_team.run_id = $RUN_ID$
     where pct.run_id = $RUN_ID$
       and (
         pct.source_player_id is null
         or pct.source_team_id is null
-        or p.id is null
-        or t.id is null
+        or (core_player.id is null and staging_player.id is null)
+        or (core_team.id is null and staging_team.id is null)
       );
   `
 };
@@ -178,7 +203,7 @@ export const buildValidationSql = (runId) => {
     const validationQuery = VALIDATION_QUERIES[config.entity]?.replaceAll(
       "$RUN_ID$",
       sqlLiteral(runId)
-    );
+    )?.trim().replace(/;$/, "");
 
     if (!validationQuery) {
       return "";

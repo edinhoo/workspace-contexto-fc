@@ -1,6 +1,12 @@
 # Planejamento da Fase 2 - Pipeline Permanente de Ingestao
 
 Veja tambem: `docs/phase-2-staging-compatibility-matrix.md`
+Veja tambem: `docs/phase-2-validation-report.md`
+Veja tambem: `docs/phase-2-closeout.md`
+
+## Status
+
+Concluida.
 
 ## Objetivo
 
@@ -88,6 +94,15 @@ Ao final da Fase 2, o projeto deve ter:
 - `dry-run` funcional
 - contadores por entidade em `ops.*`
 - visibilidade clara do que mudou em cada execucao
+
+## Resultado consolidado
+
+- compatibilidade entre o payload atual do scraper e `staging.*` validada em documento proprio
+- validacao por entidade executada com `0` registros invalidos na carga real
+- promocao transacional executada com `354` insercoes na primeira ingestao
+- segunda ingestao sem duplicidade estrutural no canonico
+- `ops.ingestion_run_details` materializado e populado por lote
+- `dry-run` validado com `rollback` explicito e relatorio em Markdown
 
 ## Entregaveis
 

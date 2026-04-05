@@ -211,6 +211,23 @@ export const buildLoadRunSql = ({
 }) => `
 ${wrapInTransaction ? "begin;" : ""}
 
+truncate table
+  staging.team_match_stats,
+  staging.player_match_stats,
+  staging.player_career_teams,
+  staging.events,
+  staging.lineups,
+  staging.matches,
+  staging.players,
+  staging.teams,
+  staging.managers,
+  staging.referees,
+  staging.seasons,
+  staging.tournaments,
+  staging.stadiums,
+  staging.cities,
+  staging.countries;
+
 insert into ops.ingestion_runs (run_id, source, started_at, status)
 values (${sqlLiteral(runId)}, ${sqlLiteral(source)}, ${sqlLiteral(ingestedAt)}, ${sqlLiteral(status)});
 
