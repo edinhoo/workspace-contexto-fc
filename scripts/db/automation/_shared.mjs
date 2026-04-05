@@ -146,6 +146,58 @@ export const getNextDueScheduledScrape = () => {
   };
 };
 
+export const getScheduledScrapeById = (scheduledScrapeId) => {
+  const rows = parseRows(
+    runPsqlQuery(`
+      select
+        ss.id,
+        ss.planned_match_id,
+        pm.provider,
+        pm.provider_event_id,
+        ss.pass_number::text,
+        ss.scheduled_for::text,
+        ss.status,
+        coalesce(ss.run_id, ''),
+        ss.attempt_count::text,
+        coalesce(ss.error_message, '')
+      from ops.scheduled_scrapes ss
+      join ops.planned_matches pm on pm.id = ss.planned_match_id
+      where ss.id = ${sqlLiteral(scheduledScrapeId)}
+      limit 1;
+    `)
+  );
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  const [
+    id,
+    plannedMatchId,
+    provider,
+    providerEventId,
+    passNumber,
+    scheduledFor,
+    status,
+    runId,
+    attemptCount,
+    errorMessage
+  ] = rows[0];
+
+  return {
+    id,
+    plannedMatchId,
+    provider,
+    providerEventId,
+    passNumber: Number(passNumber),
+    scheduledFor,
+    status,
+    runId: runId || null,
+    attemptCount: Number(attemptCount),
+    errorMessage: errorMessage || null
+  };
+};
+
 export const reserveScheduledScrape = ({ scheduledScrapeId, triggeredBy }) => {
   runPsqlQuery(`
     update ops.scheduled_scrapes
@@ -243,6 +295,66 @@ export const failScheduledScrape = ({
     shouldRetry,
     nextStatus
   };
+};
+
+export const rerunScheduledScrape = ({ scheduledScrapeId, triggeredBy = "cli" }) => {
+  const scheduledScrape = getScheduledScrapeById(scheduledScrapeId);
+
+  if (!scheduledScrape) {
+    throw new Error(`scheduled_scrape nao encontrado: ${scheduledScrapeId}`);
+  }
+
+  if (scheduledScrape.status === "running") {
+    throw new Error(`scheduled_scrape ${scheduledScrapeId} esta em execucao e nao pode ser rearmado.`);
+  }
+
+  if (!["failed", "cancelled"].includes(scheduledScrape.status)) {
+    throw new Error(
+      `scheduled_scrape ${scheduledScrapeId} esta em status ${scheduledScrape.status} e nao aceita rerun manual.`
+    );
+  }
+
+  runPsqlQuery(`
+    update ops.scheduled_scrapes
+    set
+      status = 'pending',
+      triggered_by = ${sqlLiteral(triggeredBy)},
+      run_id = null,
+      error_message = null,
+      attempt_count = 0,
+      scheduled_for = now(),
+      last_attempted_at = null,
+      finished_at = null,
+      updated_at = now()
+    where id = ${sqlLiteral(scheduledScrapeId)};
+  `);
+
+  return getScheduledScrapeById(scheduledScrapeId);
+};
+
+export const cancelScheduledScrape = ({ scheduledScrapeId }) => {
+  const scheduledScrape = getScheduledScrapeById(scheduledScrapeId);
+
+  if (!scheduledScrape) {
+    throw new Error(`scheduled_scrape nao encontrado: ${scheduledScrapeId}`);
+  }
+
+  if (["done", "running"].includes(scheduledScrape.status)) {
+    throw new Error(
+      `scheduled_scrape ${scheduledScrapeId} em status ${scheduledScrape.status} nao pode ser cancelado.`
+    );
+  }
+
+  runPsqlQuery(`
+    update ops.scheduled_scrapes
+    set
+      status = 'cancelled',
+      finished_at = coalesce(finished_at, now()),
+      updated_at = now()
+    where id = ${sqlLiteral(scheduledScrapeId)};
+  `);
+
+  return getScheduledScrapeById(scheduledScrapeId);
 };
 
 const buildInsertScheduledScrapesSql = ({ plannedMatchId, scheduledAt, triggeredBy }) =>
