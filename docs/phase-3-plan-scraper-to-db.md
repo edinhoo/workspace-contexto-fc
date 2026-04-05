@@ -4,6 +4,12 @@ Veja tambem: `docs/phase-2-closeout.md`
 Veja tambem: `docs/phase-2-validation-report.md`
 Veja tambem: `docs/phase-2-staging-compatibility-matrix.md`
 Veja tambem: `docs/phase-3-integration-decision.md`
+Veja tambem: `docs/phase-3-validation-report.md`
+Veja tambem: `docs/phase-3-closeout.md`
+
+## Status
+
+Concluida.
 
 ## Objetivo
 
@@ -96,6 +102,14 @@ Ao final da Fase 3, o projeto deve ter:
 - comparacao entre o resultado do scraper migrado e a referencia conhecida da Fase 1/Fase 2
 - logs e rastreabilidade suficientes para depuracao
 
+## Resultado consolidado
+
+- o scraper passou a escrever no banco sem CSV intermediario obrigatorio
+- a execucao real usou o recorte fixo do `eventId` `15237889`
+- o primeiro run concluiu com `251` insercoes e `0` invalidacoes
+- o segundo run concluiu com `0` insercoes, `0` updates semanticos e `251` skipped
+- a referencia principal de `matches`, `lineups`, `player_match_stats`, `team_match_stats` e `events` bateu com a base conhecida da Fase 1/Fase 2
+
 ## Entregaveis
 
 - adaptacao da camada de storage do scraper para escrita no banco
@@ -176,7 +190,7 @@ Tarefas:
 
 Criterio de pronto:
 
-- a operacao do scraper no banco fica compreensivel para quem analisa os runs depois
+- dado um `run_id`, e possivel saber quais entidades foram inseridas, atualizadas, ignoradas ou falharam sem ambiguidade relevante de causa
 
 ### Frente 5 - Comparacao com a referencia validada
 
@@ -186,7 +200,7 @@ Objetivo:
 
 Tarefas:
 
-- executar scraper migrado para o mesmo recorte conhecido da Fase 1/Fase 2
+- executar scraper migrado para o mesmo recorte fixo conhecido da Fase 1/Fase 2
 - comparar contagens, relacionamentos e entidades principais
 - registrar diferencas aceitaveis e diferencas bloqueantes
 
