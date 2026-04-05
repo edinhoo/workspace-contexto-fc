@@ -30,6 +30,8 @@ Veja tambem: `docs/phase-7-source-extension-notes.md`
 Veja tambem: `docs/phase-7-validation-report.md`
 Veja tambem: `docs/phase-7-closeout.md`
 Veja tambem: `docs/data-platform-program-closeout.md`
+Veja tambem: `docs/next-cycle-plan-web-app.md`
+Veja tambem: `docs/next-cycle-plan-resident-scheduler.md`
 
 ## Objetivo
 
@@ -460,3 +462,17 @@ Se a meta for reduzir risco e ganhar velocidade real, o melhor recorte inicial e
 4. Fase 3 com o scraper escrevendo no banco
 
 Depois disso, o projeto ja sai da dependencia operacional de CSV e entra numa base muito mais segura para construir API, automacao e CMS.
+
+## Depois do plano original
+
+Com o plano de 7 fases concluido, os proximos trabalhos deixam de ser fases fundacionais e passam a ser ciclos incrementais.
+
+Ordem sugerida neste momento:
+
+1. web app sobre a `data-api`
+2. scheduler residente
+
+Motivo:
+
+- o web app revela lacunas reais da leitura antes de aumentar a automacao
+- o scheduler residente passa a fazer mais sentido quando houver partidas reais acompanhadas continuamente
