@@ -147,6 +147,10 @@ export const getNextDueScheduledScrape = () => {
   };
 };
 
+// Usa pool Node.js com transacao para garantir FOR UPDATE SKIP LOCKED.
+// Isso evita que dois schedulers concorrentes peguem o mesmo scheduled_scrape.
+// As funcoes completeScheduledScrape e failScheduledScrape nao precisam de lock
+// porque so operam sobre um item ja reservado por este claim.
 export const claimNextDueScheduledScrape = async ({ triggeredBy }) =>
   withDbTransaction(async (client) => {
     const candidateResult = await client.query(
