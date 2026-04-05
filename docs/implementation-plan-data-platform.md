@@ -12,6 +12,7 @@ Veja tambem: `docs/phase-1-plan-bootstrap-and-db.md`
 Veja tambem: `docs/phase-1-closeout.md`
 Veja tambem: `docs/phase-2-plan-ingestion-pipeline.md`
 Veja tambem: `docs/phase-2-closeout.md`
+Veja tambem: `docs/phase-3-plan-scraper-to-db.md`
 
 ## Objetivo
 
@@ -180,6 +181,9 @@ Fazer `services/sofascore` deixar de depender de CSV como etapa operacional.
 - preservar normalizacao e regras semanticas ja existentes
 - comparar o resultado do scraper novo com o bootstrap validado na Fase 1
 - manter logs e rastreabilidade da origem
+- adicionar erro claro para duplicidade de `source_ref` no lote
+- melhorar a leitura de diff para separar mudanca semantica de refresh operacional, quando viavel
+- manter a primeira versao da migracao com execucao serial, sem concorrencia entre lotes
 
 ### Dependencias
 
@@ -190,6 +194,8 @@ Fazer `services/sofascore` deixar de depender de CSV como etapa operacional.
 - o scraper popula o banco de forma consistente
 - os resultados batem com a referencia validada
 - CSV deixa de ser obrigatorio no fluxo normal
+- a execucao do scraper falha cedo quando houver problema de identidade no lote
+- a leitura do resultado da ingestao evita ambiguidade relevante entre update semantico e refresh operacional
 
 ## Fase 4 - API de leitura e contextos
 
