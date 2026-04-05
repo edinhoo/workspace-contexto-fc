@@ -7,6 +7,7 @@ Veja tambem: `docs/data-platform-constraints-matrix.md`
 Veja tambem: `docs/data-platform-ddl-proposal.md`
 Veja tambem: `docs/data-platform-ddl-review.md`
 Veja tambem: `docs/data-platform-ddl-v1.md`
+Veja tambem: `docs/phase-0-decisions-for-validation.md`
 
 ## Objetivo
 
