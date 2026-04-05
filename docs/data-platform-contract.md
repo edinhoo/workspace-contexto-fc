@@ -4,6 +4,8 @@
 
 Registrar o contrato inicial de dados da Fase 0 com base no estado real do scraper do Sofascore, dos tipos TypeScript e dos CSVs atuais.
 
+Veja tambem: `docs/data-platform-schema-design.md`
+
 Este documento fecha a primeira camada de definicao para:
 
 - entidades canonicas
@@ -46,6 +48,11 @@ Entidades atualmente persistidas:
 - `team_match_stats`
 - `events`
 - `player_career_teams`
+
+Observacao:
+
+- a plataforma passa a prever tambem a entidade `states`, mesmo sem alimentacao pelo scraper
+- `states` nasce como cadastro manual do sistema e pode ser mantido via `Directus`
 
 ## Schemas alvo da plataforma
 
@@ -110,11 +117,17 @@ Responsabilidade:
 
 - separar ajustes manuais do dado canonico de ingestao
 
+Observacao:
+
+- nem todo dado manual precisa nascer em `editorial.*`
+- `states` entra como entidade estrutural do dominio e deve existir em `core.*`, mesmo sendo mantido manualmente
+
 ## Entidades canonicas iniciais de `core.*`
 
 ### Cadastros base
 
 - `core.countries`
+- `core.states`
 - `core.cities`
 - `core.stadiums`
 - `core.tournaments`
@@ -157,6 +170,11 @@ Tambem faz sentido prever staging para cadastros atualizados pelo scrape:
 
 `staging.team_match_stats` pode existir, mas como o agregado e derivado, a preferencia inicial e recalcula-lo dentro do pipeline a partir de `staging.player_match_stats`.
 
+Observacao:
+
+- `states` nao precisa de `staging.*` na primeira versao, porque nao sera alimentado pelo scraper
+- `city.state` pode nascer vazio e ser preenchido manualmente depois
+
 ## Estrategia de identidade
 
 ### Regra geral
@@ -172,6 +190,7 @@ Entidades simples usam `source_ref` como chave principal de origem.
 Grupo:
 
 - countries
+- states
 - cities
 - stadiums
 - referees
@@ -211,6 +230,7 @@ Estas chaves foram confirmadas a partir do comportamento atual dos storages.
 | Entidade | Chave natural inicial |
 | --- | --- |
 | countries | `source_ref` |
+| states | `country + slug` |
 | cities | `source_ref` |
 | stadiums | `source_ref` |
 | tournaments | `source_ref` |
@@ -230,6 +250,8 @@ Estas chaves foram confirmadas a partir do comportamento atual dos storages.
 
 ### Cadastros
 
+- `states.country -> countries.id`
+- `cities.state -> states.id`
 - `cities.country -> countries.id`
 - `stadiums.city -> cities.id`
 - `tournaments.country -> countries.id`
@@ -373,6 +395,7 @@ Primeiras dimensoes opcionais esperadas:
 - alguns CSVs ainda possuem headers legados e campos antigos como `translated` e `edited`
 - nem todas as entidades simples usam hoje o mesmo nivel de espelhamento `source_*`
 - `team_match_stats` e derivado, o que impacta a necessidade de staging proprio
+- `states` nao existe no legado atual e entra como dado nativo do sistema, nao como espelho da origem
 
 ### Decisoes abertas
 
