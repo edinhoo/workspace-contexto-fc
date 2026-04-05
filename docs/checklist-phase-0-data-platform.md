@@ -6,6 +6,11 @@ Preparar a base tecnica da plataforma de dados antes de qualquer execucao de ban
 
 Este checklist nao implica implementacao imediata. Ele existe para orientar a futura execucao da Fase 0 com clareza e ordem.
 
+Veja tambem: `docs/data-platform-contract.md`
+Veja tambem: `docs/data-platform-schema-design.md`
+Veja tambem: `docs/data-platform-constraints-matrix.md`
+Veja tambem: `docs/data-platform-ddl-proposal.md`
+
 ## Definicao de pronto da Fase 0
 
 A Fase 0 esta pronta quando:
@@ -31,6 +36,7 @@ A Fase 0 esta pronta quando:
 
 - [ ] definir a lista inicial de entidades de `core.*`
 - [ ] definir a lista inicial de entidades de `staging.*`
+- [ ] definir quais entidades existem no sistema mesmo sem alimentacao pelo scraper, como `states`
 - [ ] definir se `raw.*` comeca na primeira entrega ou entra depois
 - [ ] definir quais entidades terao tabela `editorial.*`
 - [ ] definir quais modelos de leitura iniciais serao expostos em `read.*`

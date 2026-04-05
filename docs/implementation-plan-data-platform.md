@@ -1,6 +1,13 @@
 # Plano de Implementacao da Plataforma de Dados
 
 Veja tambem: `docs/checklist-phase-0-data-platform.md`
+Veja tambem: `docs/data-platform-contract.md`
+Veja tambem: `docs/data-platform-schema-design.md`
+Veja tambem: `docs/data-platform-constraints-matrix.md`
+Veja tambem: `docs/data-platform-ddl-proposal.md`
+Veja tambem: `docs/data-platform-ddl-review.md`
+Veja tambem: `docs/data-platform-ddl-v1.md`
+Veja tambem: `docs/phase-0-decisions-for-validation.md`
 
 ## Objetivo
 
