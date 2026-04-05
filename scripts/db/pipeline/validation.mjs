@@ -198,6 +198,47 @@ const VALIDATION_QUERIES = {
   `
 };
 
+const buildWarningArrayExpression = (rules) => {
+  if (!rules || rules.length === 0) {
+    return "null";
+  }
+
+  const warningArray = `array_remove(array[${rules
+    .map(
+      ({ condition, payload }) =>
+        `case when ${condition} then ${payload} end`
+    )
+    .join(", ")}]::jsonb[], null)`;
+
+  return `case when cardinality(${warningArray}) = 0 then null else to_jsonb(${warningArray}) end`;
+};
+
+const WARNING_EXPRESSIONS = {
+  lineups: buildWarningArrayExpression([
+    {
+      condition: "jersey_number is null",
+      payload: `jsonb_build_object('type', 'missing_jersey_number')`
+    },
+    {
+      condition: "rating is null",
+      payload: `jsonb_build_object('type', 'missing_lineup_rating')`
+    }
+  ]),
+  player_match_stats: buildWarningArrayExpression([
+    {
+      condition: "not (stat_payload ? 'rating') or nullif(stat_payload->>'rating', '') is null",
+      payload: `jsonb_build_object('type', 'missing_player_stat_rating')`
+    }
+  ]),
+  events: buildWarningArrayExpression([
+    {
+      condition:
+        "incident_type in ('goal', 'card', 'substitution', 'varDecision') and (player is null or player = '')",
+      payload: `jsonb_build_object('type', 'missing_player_for_incident', 'incident_type', incident_type)`
+    }
+  ])
+};
+
 export const buildValidationSql = (runId) => {
   const statements = ENTITY_CONFIGS.map((config) => {
     const validationQuery = VALIDATION_QUERIES[config.entity]?.replaceAll(
@@ -208,6 +249,8 @@ export const buildValidationSql = (runId) => {
     if (!validationQuery) {
       return "";
     }
+
+    const warningsExpression = WARNING_EXPRESSIONS[config.entity] ?? "null";
 
     return `
 with validation_result as (
@@ -220,7 +263,7 @@ set
     when (select count from validation_result) = 0 then null
     else jsonb_build_array(jsonb_build_object('type', 'entity_validation', 'entity', ${sqlLiteral(config.entity)}, 'count', (select count from validation_result)))
   end,
-  warnings = null
+  warnings = ${warningsExpression}
 where run_id = ${sqlLiteral(runId)};
 `;
   });
@@ -244,7 +287,7 @@ export const validateRun = (runId) => {
 export const getValidationSummary = (runId) => {
   const rows = parseRows(
     runPsqlQuery(`
-      select entity, rows_seen::text, rows_valid::text, rows_invalid::text, status
+      select entity, rows_seen::text, rows_valid::text, rows_invalid::text, warning_rows::text, warning_entries::text, status
       from (
         ${ENTITY_CONFIGS.map(
           (config) => `
@@ -253,6 +296,8 @@ export const getValidationSummary = (runId) => {
               count(*) as rows_seen,
               count(*) filter (where validation_status = 'valid') as rows_valid,
               count(*) filter (where validation_status = 'invalid') as rows_invalid,
+              count(*) filter (where warnings is not null) as warning_rows,
+              coalesce(sum(jsonb_array_length(coalesce(warnings, '[]'::jsonb))), 0) as warning_entries,
               case
                 when count(*) filter (where validation_status = 'invalid') > 0 then 'invalid'
                 else 'valid'
@@ -266,11 +311,13 @@ export const getValidationSummary = (runId) => {
     `)
   );
 
-  return rows.map(([entity, rowsSeen, rowsValid, rowsInvalid, status]) => ({
+  return rows.map(([entity, rowsSeen, rowsValid, rowsInvalid, warningRows, warningEntries, status]) => ({
     entity,
     rowsSeen: Number(rowsSeen),
     rowsValid: Number(rowsValid),
     rowsInvalid: Number(rowsInvalid),
+    warningRows: Number(warningRows),
+    warningEntries: Number(warningEntries),
     status
   }));
 };

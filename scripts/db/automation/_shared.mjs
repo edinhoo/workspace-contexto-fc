@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { withDbTransaction } from "../node-db.mjs";
 import { createTempSqlFile, runPsqlFile, runPsqlQuery } from "../_shared.mjs";
 import { sqlLiteral } from "../pipeline/source-data.mjs";
 
@@ -145,6 +146,74 @@ export const getNextDueScheduledScrape = () => {
     attemptCount: Number(attemptCount)
   };
 };
+
+// Usa pool Node.js com transacao para garantir FOR UPDATE SKIP LOCKED.
+// Isso evita que dois schedulers concorrentes peguem o mesmo scheduled_scrape.
+// As funcoes completeScheduledScrape e failScheduledScrape nao precisam de lock
+// porque so operam sobre um item ja reservado por este claim.
+export const claimNextDueScheduledScrape = async ({ triggeredBy }) =>
+  withDbTransaction(async (client) => {
+    const candidateResult = await client.query(
+      `
+        select
+          ss.id,
+          ss.planned_match_id,
+          pm.provider,
+          pm.provider_event_id,
+          ss.pass_number,
+          ss.scheduled_for,
+          ss.status,
+          ss.attempt_count
+        from ops.scheduled_scrapes ss
+        join ops.planned_matches pm on pm.id = ss.planned_match_id
+        where ss.status = 'pending'
+          and ss.scheduled_for <= now()
+          and pm.status <> 'cancelled'
+        order by ss.scheduled_for asc, ss.pass_number asc
+        for update of ss skip locked
+        limit 1;
+      `,
+    );
+
+    const candidate = candidateResult.rows[0];
+
+    if (!candidate) {
+      return null;
+    }
+
+    const scheduledScrapeResult = await client.query(
+      `
+        update ops.scheduled_scrapes
+        set
+          status = 'running',
+          triggered_by = $2,
+          attempt_count = attempt_count + 1,
+          last_attempted_at = now(),
+          updated_at = now(),
+          error_message = null
+        where id = $1
+        returning id, attempt_count, status;
+      `,
+      [candidate.id, triggeredBy]
+    );
+
+    const claimed = scheduledScrapeResult.rows[0];
+
+    if (!claimed) {
+      return null;
+    }
+
+    return {
+      id: candidate.id,
+      plannedMatchId: candidate.planned_match_id,
+      provider: candidate.provider,
+      providerEventId: candidate.provider_event_id,
+      passNumber: Number(candidate.pass_number),
+      scheduledFor: candidate.scheduled_for.toISOString(),
+      status: claimed.status,
+      attemptCount: Number(claimed.attempt_count)
+    };
+  });
 
 export const getScheduledScrapeById = (scheduledScrapeId) => {
   const rows = parseRows(

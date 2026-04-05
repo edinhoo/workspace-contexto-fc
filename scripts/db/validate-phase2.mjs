@@ -33,6 +33,6 @@ process.stdout.write(`Validacao da Fase 2 executada para run_id=${runId}\n`);
 
 for (const item of summary) {
   process.stdout.write(
-    `- ${item.entity}: seen=${item.rowsSeen} valid=${item.rowsValid} invalid=${item.rowsInvalid} status=${item.status}\n`
+    `- ${item.entity}: seen=${item.rowsSeen} valid=${item.rowsValid} invalid=${item.rowsInvalid} warning_rows=${item.warningRows} warning_entries=${item.warningEntries} status=${item.status}\n`
   );
 }

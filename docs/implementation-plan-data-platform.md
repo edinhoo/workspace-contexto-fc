@@ -22,6 +22,13 @@ Veja tambem: `docs/phase-5-automation-states.md`
 Veja tambem: `docs/phase-5-validation-report.md`
 Veja tambem: `docs/phase-5-closeout.md`
 Veja tambem: `docs/phase-6-plan-directus.md`
+Veja tambem: `docs/phase-6-validation-report.md`
+Veja tambem: `docs/phase-6-closeout.md`
+Veja tambem: `docs/phase-7-plan-robustness-and-scale.md`
+Veja tambem: `docs/phase-7-performance-review.md`
+Veja tambem: `docs/phase-7-source-extension-notes.md`
+Veja tambem: `docs/phase-7-validation-report.md`
+Veja tambem: `docs/phase-7-closeout.md`
 
 ## Objetivo
 
@@ -401,18 +408,24 @@ Preparar a plataforma para crescer com mais volume, automacao e novas fontes.
 
 ### Tarefas
 
+- estabilizar o contrato de saida do scraper para o scheduler
+- migrar a reserva transacional do scheduler para conexao direta em `Node.js`
+- endurecer a reserva do proximo `scheduled_scrape` para cenarios concorrentes
+- melhorar observabilidade, diffs e papel de `warnings`
 - adicionar persistencia bruta onde fizer sentido
-- otimizar janelas de execucao para multiplas partidas
 - revisar indices e performance das queries principais
-- materializar agregados mais pesados quando necessario
+- materializar `read.*` apenas quando houver repeticao concreta
 - preparar contrato de ingestao para novas origens
 
 ### Dependencias
 
-- Fases 3, 4 e 5 em operacao estavel
+- Fases 3, 4, 5 e 6 em operacao estavel
 
 ### Criterios de pronto
 
+- o scheduler deixa de depender de contrato textual fragil
+- a reserva do proximo scrape fica segura em concorrencia
+- a observabilidade das execucoes melhora de forma verificavel
 - a plataforma aguenta crescer sem reescrita estrutural
 - gargalos principais estao mapeados
 - novas fontes podem entrar sem quebrar o modelo atual

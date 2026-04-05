@@ -1,19 +1,30 @@
 import { spawnSync } from "node:child_process";
 
+import { closeDbPool } from "../node-db.mjs";
 import {
+  claimNextDueScheduledScrape,
   completeScheduledScrape,
   failScheduledScrape,
-  getLatestIngestionRunId,
-  getNextDueScheduledScrape,
-  reserveScheduledScrape
 } from "./_shared.mjs";
 
-const SCRAPER_SUCCESS_REGEX = /Run do banco concluido com sucesso:\s*([^\s]+)/;
-const VALIDATION_FAILURE_MARKER = "bloqueada por entidades invalidas";
+const SCRAPE_RESULT_PREFIX = "SCRAPE_RESULT ";
 
-const parseArgs = (argv) => ({
-  drain: argv.includes("--drain")
-});
+const parseArgs = (argv) => {
+  const drain = argv.includes("--drain");
+  const maxItemsArgument = argv.find((argument) => argument.startsWith("--max-items="));
+  const rawMaxItems = maxItemsArgument?.replace("--max-items=", "").trim();
+  const parsedMaxItems = rawMaxItems ? Number.parseInt(rawMaxItems, 10) : Number.NaN;
+
+  return {
+    drain,
+    maxItems:
+      Number.isFinite(parsedMaxItems) && parsedMaxItems > 0
+        ? parsedMaxItems
+        : drain
+          ? 100
+          : 1
+  };
+};
 
 const cliOptions = parseArgs(process.argv.slice(2));
 
@@ -28,7 +39,24 @@ const runScrapeForEvent = (providerEventId) =>
     }
   );
 
-const extractRunIdFromOutput = (output) => output.match(SCRAPER_SUCCESS_REGEX)?.[1] ?? null;
+const extractStructuredResult = (output) => {
+  const line = output
+    .split(/\r?\n/)
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .reverse()
+    .find((entry) => entry.startsWith(SCRAPE_RESULT_PREFIX));
+
+  if (!line) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(line.slice(SCRAPE_RESULT_PREFIX.length));
+  } catch {
+    return null;
+  }
+};
 
 const shortenMessage = (value) =>
   value
@@ -39,27 +67,22 @@ const shortenMessage = (value) =>
     .join(" | ")
     .slice(0, 500);
 
-const processNextScheduledScrape = () => {
-  const nextScheduledScrape = getNextDueScheduledScrape();
+const processNextScheduledScrape = async () => {
+  const nextScheduledScrape = await claimNextDueScheduledScrape({
+    triggeredBy: "scheduler"
+  });
 
   if (!nextScheduledScrape) {
     process.stdout.write("Nenhum scheduled_scrape pendente e vencido para executar.\n");
     return { processed: false };
   }
 
-  reserveScheduledScrape({
-    scheduledScrapeId: nextScheduledScrape.id,
-    triggeredBy: "scheduler"
-  });
-
-  const previousRunId = getLatestIngestionRunId(nextScheduledScrape.provider);
   const scrapeResult = runScrapeForEvent(nextScheduledScrape.providerEventId);
   const combinedOutput = [scrapeResult.stdout, scrapeResult.stderr].filter(Boolean).join("\n");
-  const parsedRunId = extractRunIdFromOutput(combinedOutput);
-  const latestRunId = getLatestIngestionRunId(nextScheduledScrape.provider);
-  const runId = parsedRunId ?? (latestRunId !== previousRunId ? latestRunId : null);
+  const structuredResult = extractStructuredResult(scrapeResult.stdout ?? "");
+  const runId = structuredResult?.runId ?? null;
 
-  if (scrapeResult.status === 0) {
+  if (scrapeResult.status === 0 && structuredResult?.status === "success") {
     const completion = completeScheduledScrape({
       scheduledScrapeId: nextScheduledScrape.id,
       runId,
@@ -79,11 +102,15 @@ const processNextScheduledScrape = () => {
     };
   }
 
-  const retryable = !combinedOutput.includes(VALIDATION_FAILURE_MARKER);
+  const retryable = structuredResult?.errorKind !== "validation_failure";
   const failure = failScheduledScrape({
     scheduledScrapeId: nextScheduledScrape.id,
     retryable,
-    errorMessage: shortenMessage(combinedOutput || "Falha desconhecida no scheduler")
+    errorMessage: shortenMessage(
+      structuredResult?.errorMessage ||
+        combinedOutput ||
+        "Falha desconhecida no scheduler"
+    )
   });
 
   process.stdout.write(
@@ -101,18 +128,28 @@ const processNextScheduledScrape = () => {
 
 let processedCount = 0;
 
-do {
-  const result = processNextScheduledScrape();
+try {
+  do {
+    const result = await processNextScheduledScrape();
 
-  if (!result.processed) {
-    break;
+    if (!result.processed) {
+      break;
+    }
+
+    processedCount += 1;
+
+    if (!cliOptions.drain || processedCount >= cliOptions.maxItems) {
+      break;
+    }
+  } while (true);
+
+  if (cliOptions.drain && processedCount >= cliOptions.maxItems) {
+    process.stdout.write(
+      `Scheduler serial atingiu o limite do drain. max_items=${cliOptions.maxItems}\n`
+    );
   }
 
-  processedCount += 1;
-
-  if (!cliOptions.drain) {
-    break;
-  }
-} while (true);
-
-process.stdout.write(`Scheduler serial finalizado. itens_processados=${processedCount}\n`);
+  process.stdout.write(`Scheduler serial finalizado. itens_processados=${processedCount}\n`);
+} finally {
+  await closeDbPool();
+}

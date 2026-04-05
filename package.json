@@ -29,6 +29,7 @@
     "db:cancel-scheduled-scrape:phase5": "node scripts/db/automation/cancel-scheduled-scrape.mjs",
     "db:ingest:phase2": "node scripts/db/ingest-phase2.mjs",
     "db:plan-match:phase5": "node scripts/db/automation/plan-match.mjs",
+    "db:report:phase7": "node scripts/db/report-phase7.mjs",
     "db:rerun-scheduled-scrape:phase5": "node scripts/db/automation/rerun-scheduled-scrape.mjs",
     "db:run-scheduler:phase5": "node scripts/db/automation/run-scheduler.mjs",
     "db:validate:phase1": "node scripts/db/validate-phase1.mjs",
@@ -44,5 +45,8 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.29.1",
     "ulid": "^2.4.0"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
   }
 }

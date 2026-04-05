@@ -36,6 +36,15 @@ classified_rows as (
   left join ${coreTable} target
     on ${conflictColumns.map((column) => `target.${column} is not distinct from source_rows.${column}`).join("\n    and ")}
 ),
+warning_summary as (
+  select
+    warning_item->>'type' as warning_type,
+    count(*) as warning_count
+  from ${coreTable.replace("core.", "staging.")}
+  cross join lateral jsonb_array_elements(coalesce(warnings, '[]'::jsonb)) warning_item
+  where run_id = ${sqlLiteral(runId)}
+  group by warning_item->>'type'
+),
 upserted as (
   insert into ${coreTable} (
     ${insertColumns.join(", ")}
@@ -76,7 +85,13 @@ select
     - coalesce((select count(*) from classified_rows where semantic_change), 0),
     0
   ),
-  null,
+  (
+    select jsonb_agg(
+      jsonb_build_object('type', warning_type, 'count', warning_count)
+      order by warning_type
+    )
+    from warning_summary
+  ),
   (
     select jsonb_agg(validation_errors) filter (where validation_errors is not null)
     from ${coreTable.replace("core.", "staging.")}
@@ -363,7 +378,16 @@ set
   finished_at = now(),
   rows_inserted = coalesce((select sum(rows_inserted) from ops.ingestion_run_details where run_id = ${sqlLiteral(runId)}), 0),
   rows_updated = coalesce((select sum(rows_updated) from ops.ingestion_run_details where run_id = ${sqlLiteral(runId)}), 0),
-  rows_skipped = coalesce((select sum(rows_skipped) from ops.ingestion_run_details where run_id = ${sqlLiteral(runId)}), 0)
+  rows_skipped = coalesce((select sum(rows_skipped) from ops.ingestion_run_details where run_id = ${sqlLiteral(runId)}), 0),
+  warnings = (
+    select jsonb_agg(
+      jsonb_build_object('entity', entity, 'warnings', warnings)
+      order by entity
+    )
+    from ops.ingestion_run_details
+    where run_id = ${sqlLiteral(runId)}
+      and warnings is not null
+  )
 where run_id = ${sqlLiteral(runId)};
 
 ${options.wrapInTransaction === false ? "" : "commit;"}
@@ -377,7 +401,8 @@ select
   rows_invalid::text,
   rows_inserted::text,
   rows_updated::text,
-  rows_skipped::text
+  rows_skipped::text,
+  coalesce(warnings::text, '')
 from ops.ingestion_run_details
 where run_id = ${sqlLiteral(runId)}
 order by entity;
