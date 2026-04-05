@@ -29,6 +29,7 @@ Veja tambem: `docs/phase-7-performance-review.md`
 Veja tambem: `docs/phase-7-source-extension-notes.md`
 Veja tambem: `docs/phase-7-validation-report.md`
 Veja tambem: `docs/phase-7-closeout.md`
+Veja tambem: `docs/data-platform-program-closeout.md`
 
 ## Objetivo
 
