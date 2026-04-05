@@ -11,5 +11,3 @@ create table if not exists editorial.team_overrides (
 
 create index if not exists idx_editorial_team_overrides_team
   on editorial.team_overrides(team);
-
-grant select, insert, update, delete on editorial.team_overrides to directus_app;

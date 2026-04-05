@@ -13,14 +13,13 @@ Esse usuario existe apenas para desenvolvimento local na Fase 6.
 
 ## Schemas visiveis
 
-- `directus`
-  - schema interno do CMS
-  - leitura e escrita para as tabelas de sistema do Directus
+- `public`
+  - schema das tabelas internas do CMS nesta iteracao
+  - schema das superficies operacionais `panel_*`
 - `core`
   - leitura geral
-  - escrita excepcional apenas em `core.states`
 - `editorial`
-  - leitura e escrita para overrides controlados
+  - leitura dos overrides canonicos
 
 ## Schemas fora de edicao
 
@@ -31,22 +30,19 @@ Esse usuario existe apenas para desenvolvimento local na Fase 6.
 - `ops.*`
   - sem edicao
 
-## Regra de excecao em `core.*`
+## Superficies operacionais da fase
 
-Na primeira iteracao, a unica excecao de escrita direta em `core.*` e:
+Na implementacao validada da Fase 6, o painel escreve nestas colecoes do `public`:
+
+- `panel_states`
+- `panel_team_overrides`
+
+Essas colecoes sincronizam para:
 
 - `core.states`
+- `editorial.team_overrides`
 
-Permissoes:
-
-- `select`
-- `insert`
-- `update`
-
-Nao entra nesta frente:
-
-- escrita manual em tabelas alimentadas pelo scraper
-- abertura ampla de CRUD em `core.*`
+A sincronizacao acontece por triggers `SECURITY DEFINER`.
 
 ## Regra para `editorial.*`
 
@@ -57,4 +53,5 @@ Toda nova necessidade de override deve preferir `editorial.*` em vez de multipli
 - ingestao continua passando apenas pelo pipeline do scraper
 - `Directus` nao substitui `staging.*`
 - `Directus` nao deve operar `scheduled_scrapes` nem `ingestion_runs`
+- o `directus_app` nao recebe escrita ampla em `core.*` nem `editorial.*`
 - a permissao de banco reforca a fronteira mesmo que o painel seja mal configurado

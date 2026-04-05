@@ -38,6 +38,6 @@ Essa tabela existe para guardar ajustes pequenos de apresentacao e publicacao qu
 
 ## Decisao de uso na Fase 6
 
-- o primeiro caso provado no painel continua sendo `core.states`
-- `editorial.team_overrides` entra como prova controlada da camada `editorial.*`
+- o primeiro caso provado no painel passa por `panel_states`, com sincronizacao para `core.states`
+- `panel_team_overrides` entra como superficie operacional sincronizada para `editorial.team_overrides`
 - a aplicacao dos overrides em leitura fica como decisao posterior, documentada no encerramento da fase

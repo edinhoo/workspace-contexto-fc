@@ -12,6 +12,7 @@
     "dev:data-api": "pnpm --filter @services/data-api start",
     "directus:down": "docker compose -f infra/docker/docker-compose.yml stop directus",
     "directus:logs": "docker compose -f infra/docker/docker-compose.yml logs -f directus",
+    "directus:register:phase6": "node scripts/directus/register-phase6-collections.mjs",
     "directus:up": "docker compose -f infra/docker/docker-compose.yml up -d directus",
     "lint": "turbo run lint",
     "scrape:sofascore": "pnpm --filter @services/sofascore scrape",

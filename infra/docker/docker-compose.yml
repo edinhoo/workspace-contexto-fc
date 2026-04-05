@@ -20,7 +20,7 @@ services:
       retries: 10
 
   directus:
-    image: directus/directus:11.5.1
+    image: directus/directus:11.17.1
     container_name: contexto-fc-directus
     depends_on:
       postgres:
@@ -28,7 +28,7 @@ services:
     environment:
       KEY: contexto-fc-directus-local-key
       SECRET: contexto-fc-directus-local-secret
-      ADMIN_EMAIL: admin@contextofc.local
+      ADMIN_EMAIL: admin@contextofc.dev
       ADMIN_PASSWORD: directus-local-admin
       PUBLIC_URL: http://127.0.0.1:8055
       DB_CLIENT: pg

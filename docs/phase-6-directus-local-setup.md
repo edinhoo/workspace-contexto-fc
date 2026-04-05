@@ -9,7 +9,7 @@ Subir o `Directus` localmente contra o mesmo `PostgreSQL` do projeto para valida
 ## Credenciais locais
 
 - URL: `http://127.0.0.1:8055`
-- email: `admin@contextofc.local`
+- email: `admin@contextofc.dev`
 - senha: `directus-local-admin`
 
 Esses valores sao apenas para desenvolvimento local.
@@ -20,6 +20,7 @@ Esses valores sao apenas para desenvolvimento local.
 pnpm docker:up
 pnpm db:migrate
 pnpm directus:up
+pnpm directus:register:phase6
 ```
 
 ## Como acompanhar
@@ -38,5 +39,6 @@ pnpm docker:down
 ## Observacoes
 
 - o `Directus` usa o mesmo banco `contexto_fc`
-- as tabelas internas do CMS devem ficar no schema `directus`
+- as tabelas internas do CMS ficam no `public` nesta iteracao, por compatibilidade pratica com o runtime validado
+- a operacao do painel acontece nas colecoes `panel_states` e `panel_team_overrides`
 - a fase nao abre edicao em `staging.*` nem `ops.*`
