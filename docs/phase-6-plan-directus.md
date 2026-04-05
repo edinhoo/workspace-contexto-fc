@@ -45,10 +45,11 @@ Nesta fase, o valor nao e "editar qualquer tabela". O valor e provar um fluxo se
 ## Decisoes fechadas antes de executar
 
 - `Directus` entra como interface operacional, nao como origem de ingestao
-- o `Directus` usa schema proprio `directus`, sem misturar suas tabelas internas no `public`
+- na execucao validada da fase, as tabelas internas do `Directus` ficam no `public` por compatibilidade pratica de runtime
 - `raw.*`, `staging.*` e `ops.*` ficam fora de edicao
 - a primeira iteracao privilegia `editorial.*` em vez de escrita direta em `core.*`
 - o primeiro caso concreto da fase sera a manutencao manual de `core.states` via painel
+- a operacao do painel acontece em superficies controladas `panel_*`, com sincronizacao para `core.*` e `editorial.*`
 - excecao inicial permitida: `core.states` pode ser mantido manualmente porque nao depende da ingestao automatica atual
 - a excecao de `core.states` nao abre precedente para edicao ampla em `core.*`
 - o primeiro ciclo deve provar poucos casos bem controlados, nao abrir o banco inteiro para edicao
@@ -109,9 +110,9 @@ Definir claramente o que o `Directus` pode ver e o que pode editar.
 
 ### Decisao operacional inicial
 
-- `core.states` e a unica excecao inicial de manutencao direta em `core.*`
-- essa excecao existe porque `states` e um cadastro estrutural mantido manualmente
-- nenhuma tabela alimentada pelo scraper deve ganhar escrita manual nesta frente
+- `core.states` continua sendo o primeiro caso real provado na fase
+- a operacao acontece por `panel_states`, com sincronizacao para `core.states`
+- nenhuma tabela alimentada pelo scraper ganha escrita manual direta nesta frente
 
 ## Frente 3 - Primeira camada `editorial.*`
 
@@ -138,8 +139,8 @@ Materializar poucos overrides uteis para provar a estrategia editorial.
 
 ### Decisao inicial da frente
 
-- a primeira prova real da fase e `core.states` no painel
-- uma primeira tabela `editorial.*` so entra se surgir um segundo caso concreto e simples durante a execucao
+- a primeira prova real da fase e `panel_states`, sincronizado para `core.states`
+- `panel_team_overrides`, sincronizado para `editorial.team_overrides`, entra como segundo caso simples e concreto
 
 ### Criterios de pronto
 
@@ -218,8 +219,8 @@ Fechar a fase com uma decisao clara sobre como os overrides entram no consumo.
 
 - começar com poucos casos de override
 - manter `raw.*`, `staging.*` e `ops.*` fora da edicao
-- usar schema `directus` para as tabelas internas do CMS
-- permitir manutencao manual apenas de `core.states` na primeira iteracao
+- usar o setup validado em runtime para as tabelas internas do CMS, sem reabrir escrita ampla no canônico
+- permitir manutencao manual apenas via superficies `panel_*` na primeira iteracao
 - usar `editorial.*` para novos overrides em vez de multiplicar excecoes em `core.*`
 - adiar integracao ampla de overrides na API se o valor ainda nao estiver claro
 

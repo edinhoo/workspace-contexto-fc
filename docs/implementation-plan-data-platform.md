@@ -336,6 +336,10 @@ Concluida.
 
 Introduzir o `Directus` sem comprometer o modelo canonico.
 
+### Status
+
+Concluida.
+
 ### Entregaveis
 
 - `Directus` conectado ao banco
@@ -368,11 +372,19 @@ Introduzir o `Directus` sem comprometer o modelo canonico.
 
 - iniciar com poucos casos editoriais e nao com abertura ampla do banco
 - manter `raw.*`, `staging.*` e `ops.*` fora de edicao
-- usar schema proprio `directus` para as tabelas internas do CMS
-- usar `editorial.*` como caminho principal para novos overrides
-- permitir manutencao manual excepcional apenas de `core.states` na primeira iteracao
-- usar `core.states` como primeiro caso real provado da fase
+- manter as tabelas internas do CMS no setup validado em runtime
+- usar superficies operacionais `panel_*` como ponto de contato do painel
+- sincronizar `panel_states -> core.states`
+- sincronizar `panel_team_overrides -> editorial.team_overrides`
 - aplicar override em leitura final apenas se houver ganho claro nesta fase
+
+### Resultado consolidado
+
+- `Directus` local validado no mesmo banco do projeto
+- permissoes aplicadas sem abrir escrita ampla em `core.*`, `raw.*`, `staging.*` ou `ops.*`
+- `panel_states` validado como fluxo manual sincronizado para `core.states`
+- `panel_team_overrides` validado como fluxo editorial sincronizado para `editorial.team_overrides`
+- decisao explicita de nao aplicar overrides ainda na `data-api`
 
 ## Fase 7 - Robustez e escala
 

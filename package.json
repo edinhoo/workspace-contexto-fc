@@ -14,6 +14,7 @@
     "directus:logs": "docker compose -f infra/docker/docker-compose.yml logs -f directus",
     "directus:register:phase6": "node scripts/directus/register-phase6-collections.mjs",
     "directus:up": "docker compose -f infra/docker/docker-compose.yml up -d directus",
+    "directus:validate:phase6": "node scripts/directus/validate-phase6.mjs",
     "lint": "turbo run lint",
     "scrape:sofascore": "pnpm --filter @services/sofascore scrape",
     "test": "turbo run test",
