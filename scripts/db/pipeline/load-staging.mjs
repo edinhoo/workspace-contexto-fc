@@ -168,15 +168,32 @@ const buildTeamStatsInsert = ({ rows, runId, ingestedAt, table }) => {
   return `insert into ${table} (${columns.join(", ")}) values\n${values};\n`;
 };
 
-const buildStagingInserts = (runId, ingestedAt) =>
+const collectHeaders = (rows) => {
+  const headers = [];
+  const seen = new Set();
+
+  for (const row of rows) {
+    for (const key of Object.keys(row)) {
+      if (seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      headers.push(key);
+    }
+  }
+
+  return headers;
+};
+
+const buildStagingInsertsFromRows = (runId, ingestedAt, rowsByEntity) =>
   ENTITY_CONFIGS.map((config) => {
-    const filePath = getSourceFilePath(config.file);
-    const { headers, rows } = parseCsv(filePath);
+    const rows = rowsByEntity[config.entity] ?? [];
 
     if (config.mode === "tabular") {
       return buildTabularInsert({
         table: config.stagingTable,
-        headers,
+        headers: collectHeaders(rows),
         rows,
         runId,
         ingestedAt
@@ -201,6 +218,19 @@ const buildStagingInserts = (runId, ingestedAt) =>
   })
     .filter(Boolean)
     .join("\n");
+
+const buildStagingInserts = (runId, ingestedAt) => {
+  const rowsByEntity = Object.fromEntries(
+    ENTITY_CONFIGS.map((config) => {
+      const filePath = getSourceFilePath(config.file);
+      const { rows } = parseCsv(filePath);
+
+      return [config.entity, rows];
+    })
+  );
+
+  return buildStagingInsertsFromRows(runId, ingestedAt, rowsByEntity);
+};
 
 export const buildLoadRunSql = ({
   runId,
@@ -236,6 +266,41 @@ ${buildStagingInserts(runId, ingestedAt)}
 ${wrapInTransaction ? "commit;" : ""}
 `;
 
+export const buildLoadRunSqlFromEntityRows = ({
+  entityRowsByName,
+  runId,
+  ingestedAt,
+  source = "sofascore",
+  status = "staged",
+  wrapInTransaction = true
+}) => `
+${wrapInTransaction ? "begin;" : ""}
+
+truncate table
+  staging.team_match_stats,
+  staging.player_match_stats,
+  staging.player_career_teams,
+  staging.events,
+  staging.lineups,
+  staging.matches,
+  staging.players,
+  staging.teams,
+  staging.managers,
+  staging.referees,
+  staging.seasons,
+  staging.tournaments,
+  staging.stadiums,
+  staging.cities,
+  staging.countries;
+
+insert into ops.ingestion_runs (run_id, source, started_at, status)
+values (${sqlLiteral(runId)}, ${sqlLiteral(source)}, ${sqlLiteral(ingestedAt)}, ${sqlLiteral(status)});
+
+${buildStagingInsertsFromRows(runId, ingestedAt, entityRowsByName)}
+
+${wrapInTransaction ? "commit;" : ""}
+`;
+
 export const loadRunToStaging = ({ runId = `phase2-${randomUUID()}`, source = "sofascore" } = {}) => {
   validateSourceFiles();
 
@@ -243,6 +308,31 @@ export const loadRunToStaging = ({ runId = `phase2-${randomUUID()}`, source = "s
   const sqlFile = createTempSqlFile(
     "contexto-fc-phase2-load",
     buildLoadRunSql({ runId, ingestedAt, source })
+  );
+
+  try {
+    runPsqlFile(sqlFile.filePath);
+  } finally {
+    sqlFile.cleanup();
+  }
+
+  return { runId, ingestedAt };
+};
+
+export const loadRunToStagingFromEntityRows = ({
+  entityRowsByName,
+  runId = `phase3-${randomUUID()}`,
+  source = "sofascore"
+} = {}) => {
+  const ingestedAt = new Date().toISOString();
+  const sqlFile = createTempSqlFile(
+    "contexto-fc-phase3-load",
+    buildLoadRunSqlFromEntityRows({
+      entityRowsByName,
+      runId,
+      ingestedAt,
+      source
+    })
   );
 
   try {
