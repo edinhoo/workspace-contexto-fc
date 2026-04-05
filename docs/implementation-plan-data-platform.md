@@ -8,6 +8,7 @@ Veja tambem: `docs/data-platform-ddl-proposal.md`
 Veja tambem: `docs/data-platform-ddl-review.md`
 Veja tambem: `docs/data-platform-ddl-v1.md`
 Veja tambem: `docs/phase-0-decisions-for-validation.md`
+Veja tambem: `docs/phase-1-plan-bootstrap-and-db.md`
 
 ## Objetivo
 
@@ -82,7 +83,7 @@ Validar o desenho do banco com dados reais usando os CSVs atuais uma unica vez.
 
 - adicionar `postgres` na infra local
 - criar DDLs iniciais do schema
-- implementar script descartavel para carregar CSVs no banco
+- implementar script descartavel para carregar CSVs em `staging.*` e promover para `core.*`
 - validar integridade referencial e invariantes principais
 - registrar divergencias entre CSVs atuais e schema proposto
 
@@ -94,6 +95,7 @@ Validar o desenho do banco com dados reais usando os CSVs atuais uma unica vez.
 
 - carga inicial executa sem corromper o banco
 - relacionamentos essenciais batem com os dados reais
+- o fluxo `staging.* -> core.*` foi validado pelo bootstrap
 - o bootstrap pode ser removido depois sem deixar dependencia estrutural
 
 ## Fase 2 - Pipeline de ingestao seguro
