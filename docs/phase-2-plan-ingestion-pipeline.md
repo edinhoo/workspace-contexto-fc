@@ -1,5 +1,7 @@
 # Planejamento da Fase 2 - Pipeline Permanente de Ingestao
 
+Veja tambem: `docs/phase-2-staging-compatibility-matrix.md`
+
 ## Objetivo
 
 Transformar o fluxo validado na Fase 1 em um pipeline permanente de ingestao no banco, com:
