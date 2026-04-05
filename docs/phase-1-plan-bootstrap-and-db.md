@@ -1,5 +1,7 @@
 # Planejamento da Fase 1 - Banco e Bootstrap de Validacao
 
+Veja tambem: `docs/phase-1-bootstrap-validation-report.md`
+
 ## Objetivo
 
 Detalhar a execucao da Fase 1 da plataforma de dados.

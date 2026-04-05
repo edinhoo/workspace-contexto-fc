@@ -1,7 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
-import { tmpdir } from "node:os";
 
 const WORKDIR = resolve(process.cwd());
 const COMPOSE_FILE = "infra/docker/docker-compose.yml";
@@ -70,7 +69,10 @@ export const runPsqlQuery = (query) =>
   ]);
 
 export const createTempSqlFile = (prefix, content) => {
-  const directory = mkdtempSync(join(tmpdir(), `${prefix}-`));
+  const tempRoot = resolve(WORKDIR, ".tmp/db");
+  mkdirSync(tempRoot, { recursive: true });
+
+  const directory = mkdtempSync(join(tempRoot, `${prefix}-`));
   const filePath = join(directory, "script.sql");
 
   writeFileSync(filePath, content, "utf8");

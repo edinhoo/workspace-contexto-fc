@@ -55,6 +55,7 @@ Para a Fase 1 da plataforma de dados:
 pnpm docker:up
 pnpm db:migrate
 pnpm db:bootstrap:phase1
+pnpm db:validate:phase1
 pnpm docker:down
 ```
 
