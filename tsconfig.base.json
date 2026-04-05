@@ -17,6 +17,7 @@
     "composite": true,
     "baseUrl": ".",
     "paths": {
+      "@services/data-api/*": ["services/data-api/src/*"],
       "@repo/config": ["packages/config/src/index.ts"],
       "@repo/logger": ["packages/logger/src/index.ts"],
       "@repo/types": ["packages/types/src/index.ts"]
