@@ -1,17 +1,30 @@
 import { spawnSync } from "node:child_process";
 
+import { closeDbPool } from "../node-db.mjs";
 import {
+  claimNextDueScheduledScrape,
   completeScheduledScrape,
   failScheduledScrape,
-  getNextDueScheduledScrape,
-  reserveScheduledScrape
 } from "./_shared.mjs";
 
 const SCRAPE_RESULT_PREFIX = "SCRAPE_RESULT ";
 
-const parseArgs = (argv) => ({
-  drain: argv.includes("--drain")
-});
+const parseArgs = (argv) => {
+  const drain = argv.includes("--drain");
+  const maxItemsArgument = argv.find((argument) => argument.startsWith("--max-items="));
+  const rawMaxItems = maxItemsArgument?.replace("--max-items=", "").trim();
+  const parsedMaxItems = rawMaxItems ? Number.parseInt(rawMaxItems, 10) : Number.NaN;
+
+  return {
+    drain,
+    maxItems:
+      Number.isFinite(parsedMaxItems) && parsedMaxItems > 0
+        ? parsedMaxItems
+        : drain
+          ? 100
+          : 1
+  };
+};
 
 const cliOptions = parseArgs(process.argv.slice(2));
 
@@ -54,18 +67,15 @@ const shortenMessage = (value) =>
     .join(" | ")
     .slice(0, 500);
 
-const processNextScheduledScrape = () => {
-  const nextScheduledScrape = getNextDueScheduledScrape();
+const processNextScheduledScrape = async () => {
+  const nextScheduledScrape = await claimNextDueScheduledScrape({
+    triggeredBy: "scheduler"
+  });
 
   if (!nextScheduledScrape) {
     process.stdout.write("Nenhum scheduled_scrape pendente e vencido para executar.\n");
     return { processed: false };
   }
-
-  reserveScheduledScrape({
-    scheduledScrapeId: nextScheduledScrape.id,
-    triggeredBy: "scheduler"
-  });
 
   const scrapeResult = runScrapeForEvent(nextScheduledScrape.providerEventId);
   const combinedOutput = [scrapeResult.stdout, scrapeResult.stderr].filter(Boolean).join("\n");
@@ -118,18 +128,28 @@ const processNextScheduledScrape = () => {
 
 let processedCount = 0;
 
-do {
-  const result = processNextScheduledScrape();
+try {
+  do {
+    const result = await processNextScheduledScrape();
 
-  if (!result.processed) {
-    break;
+    if (!result.processed) {
+      break;
+    }
+
+    processedCount += 1;
+
+    if (!cliOptions.drain || processedCount >= cliOptions.maxItems) {
+      break;
+    }
+  } while (true);
+
+  if (cliOptions.drain && processedCount >= cliOptions.maxItems) {
+    process.stdout.write(
+      `Scheduler serial atingiu o limite do drain. max_items=${cliOptions.maxItems}\n`
+    );
   }
 
-  processedCount += 1;
-
-  if (!cliOptions.drain) {
-    break;
-  }
-} while (true);
-
-process.stdout.write(`Scheduler serial finalizado. itens_processados=${processedCount}\n`);
+  process.stdout.write(`Scheduler serial finalizado. itens_processados=${processedCount}\n`);
+} finally {
+  await closeDbPool();
+}
