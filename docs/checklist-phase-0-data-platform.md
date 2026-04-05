@@ -6,6 +6,8 @@ Preparar a base tecnica da plataforma de dados antes de qualquer execucao de ban
 
 Este checklist nao implica implementacao imediata. Ele existe para orientar a futura execucao da Fase 0 com clareza e ordem.
 
+Veja tambem: `docs/data-platform-contract.md`
+
 ## Definicao de pronto da Fase 0
 
 A Fase 0 esta pronta quando:

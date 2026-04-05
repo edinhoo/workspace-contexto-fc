@@ -1,6 +1,7 @@
 # Plano de Implementacao da Plataforma de Dados
 
 Veja tambem: `docs/checklist-phase-0-data-platform.md`
+Veja tambem: `docs/data-platform-contract.md`
 
 ## Objetivo
 
