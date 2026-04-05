@@ -16,7 +16,8 @@
     "format": "prettier --check .",
     "format:write": "prettier --write .",
     "docker:up": "docker compose -f infra/docker/docker-compose.yml up -d",
-    "docker:down": "docker compose -f infra/docker/docker-compose.yml down"
+    "docker:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "db:migrate": "node scripts/db/migrate.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.24.0",
