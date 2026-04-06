@@ -164,16 +164,19 @@ export function SearchExperience({
   }, [deferredQuery, resolvedQuery]);
 
   const helperMessage = useMemo(() => {
+    const normalizedQuery = query.trim();
+    const normalizedInitialQuery = initialQuery.trim();
+
     switch (status) {
       case "typing":
-        return "Digitando... os resultados aparecem sem alterar a URL ainda.";
+        return "Digitando... a busca ao vivo atualiza os resultados sem alterar a URL.";
       case "loading":
-        return "Buscando resultados atualizados...";
+        return "Buscando resultados atualizados em tempo real...";
       case "error":
-        return errorMessage ?? "Nao foi possivel consultar a busca agora.";
+        return "Nao foi possivel atualizar a busca agora. Confira a mensagem abaixo e tente novamente.";
       case "ready":
       case "empty":
-        if (query.trim() && query.trim() !== resolvedQuery.trim()) {
+        if (normalizedQuery && normalizedQuery !== normalizedInitialQuery) {
           return "Resultados instantaneos carregados. Pressione Enter para fixar essa busca na URL.";
         }
 
@@ -235,13 +238,19 @@ export function SearchExperience({
 
       {!hasQuery ? (
         <Card className="border-dashed">
-          <CardContent className="py-10 text-sm text-[color:var(--muted-foreground)]">
+          <CardContent
+            className="py-10 text-sm text-[color:var(--muted-foreground)]"
+            aria-live="polite"
+          >
             Digite um termo para consultar a `data-api` por meio do web app.
           </CardContent>
         </Card>
       ) : status === "error" ? (
         <Card className="border-dashed">
-          <CardContent className="py-10 text-sm text-[color:var(--muted-foreground)]">
+          <CardContent
+            className="py-10 text-sm text-[color:var(--muted-foreground)]"
+            aria-live="polite"
+          >
             {errorMessage ?? "Nao foi possivel carregar resultados agora."}
           </CardContent>
         </Card>
@@ -250,7 +259,7 @@ export function SearchExperience({
           {items.map((item) => {
             const href = getSearchItemHref(item);
             const content = (
-              <Card className="h-full border-black/10 bg-white/80 transition hover:border-black/20 hover:bg-white">
+              <Card className="h-full border-black/10 bg-white/80 transition hover:-translate-y-0.5 hover:border-black/20 hover:bg-white">
                 <CardHeader className="gap-3">
                   <div className="flex flex-wrap items-center gap-3">
                     <Badge variant={item.type === "match" ? "default" : "secondary"}>
@@ -286,7 +295,10 @@ export function SearchExperience({
         </section>
       ) : (
         <Card className="border-dashed">
-          <CardContent className="py-10 text-sm text-[color:var(--muted-foreground)]">
+          <CardContent
+            className="py-10 text-sm text-[color:var(--muted-foreground)]"
+            aria-live="polite"
+          >
             Nenhum resultado encontrado para <strong>{query.trim()}</strong>.
           </CardContent>
         </Card>
