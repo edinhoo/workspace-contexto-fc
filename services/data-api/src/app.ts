@@ -7,8 +7,10 @@ import { registerErrorHandler } from "./http/error.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerMatchRoutes } from "./routes/matches.js";
 import { registerPlayerRoutes } from "./routes/players.js";
+import { registerSeasonRoutes } from "./routes/seasons.js";
 import { registerSearchRoute } from "./routes/search.js";
 import { registerTeamRoutes } from "./routes/teams.js";
+import { registerTournamentRoutes } from "./routes/tournaments.js";
 import type { DbClient } from "./types.js";
 
 export const createApp = (db: DbClient = createDb()): FastifyInstance => {
@@ -37,6 +39,8 @@ export const createApp = (db: DbClient = createDb()): FastifyInstance => {
   registerMatchRoutes(app, db);
   registerTeamRoutes(app, db);
   registerPlayerRoutes(app, db);
+  registerTournamentRoutes(app, db);
+  registerSeasonRoutes(app, db);
 
   app.addHook("onClose", async () => {
     await db.destroy();

@@ -4,8 +4,10 @@ import test from "node:test";
 import { createApp } from "../app.js";
 import { matchResponseSchema } from "../contracts/matches.js";
 import { playerResponseSchema } from "../contracts/players.js";
+import { seasonResponseSchema } from "../contracts/seasons.js";
 import { searchResponseSchema } from "../contracts/search.js";
 import { teamResponseSchema } from "../contracts/teams.js";
+import { tournamentResponseSchema } from "../contracts/tournaments.js";
 import { createDb } from "../db/client.js";
 
 const integrationEnabled = process.env.DATA_API_ENABLE_DB_TESTS === "1";
@@ -25,7 +27,7 @@ const resolveFixtureIds = async () => {
     const [match, team, player] = await Promise.all([
       db
         .selectFrom("core.matches")
-        .select(["id"])
+        .select(["id", "tournament", "season"])
         .where("source_ref", "=", fixtureRefs.matchSourceRef)
         .executeTakeFirstOrThrow(),
       db
@@ -44,6 +46,8 @@ const resolveFixtureIds = async () => {
       match: match.id,
       team: team.id,
       player: player.id,
+      tournament: match.tournament,
+      season: match.season,
     };
   } finally {
     await db.destroy();
@@ -135,4 +139,55 @@ runIntegrationTest("GET /players/:id retorna contexto focal de jogador", async (
   assert.equal(payload.player.id, fixtureIds.player);
   assert.ok(Array.isArray(payload.currentTeams));
   assert.ok(Array.isArray(payload.statEntries));
+});
+
+runIntegrationTest("GET /tournaments/by-slug/:slug retorna contexto minimo de torneio", async (t) => {
+  const fixtureIds = await resolveFixtureIds();
+  const db = createDb();
+  const app = createApp(db);
+
+  const tournament = await db
+    .selectFrom("core.tournaments")
+    .select(["slug"])
+    .where("id", "=", fixtureIds.tournament)
+    .executeTakeFirstOrThrow();
+
+  t.after(async () => {
+    await app.close();
+  });
+
+  const response = await app.inject({
+    method: "GET",
+    url: `/tournaments/by-slug/${tournament.slug}`,
+  });
+
+  assert.equal(response.statusCode, 200);
+
+  const payload = tournamentResponseSchema.parse(response.json());
+
+  assert.equal(payload.tournament.slug, tournament.slug);
+  assert.ok(Array.isArray(payload.seasons));
+  assert.ok(Array.isArray(payload.recentMatches));
+});
+
+runIntegrationTest("GET /seasons/:id retorna contexto minimo de temporada", async (t) => {
+  const fixtureIds = await resolveFixtureIds();
+  const app = createApp();
+
+  t.after(async () => {
+    await app.close();
+  });
+
+  const response = await app.inject({
+    method: "GET",
+    url: `/seasons/${fixtureIds.season}`,
+  });
+
+  assert.equal(response.statusCode, 200);
+
+  const payload = seasonResponseSchema.parse(response.json());
+
+  assert.equal(payload.season.id, fixtureIds.season);
+  assert.equal(typeof payload.tournament.slug, "string");
+  assert.ok(Array.isArray(payload.recentMatches));
 });

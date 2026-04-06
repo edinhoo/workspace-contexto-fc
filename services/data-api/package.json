@@ -20,7 +20,7 @@
     "dev": "tsc -p tsconfig.build.json --watch",
     "start": "pnpm run build > /dev/null 2>&1 && node dist/server.js",
     "lint": "eslint src --ext .ts",
-    "test": "tsc -p tsconfig.test.json && node --test 'dist-test/src/**/*.test.js'",
+    "test": "rm -rf dist-test && tsc -p tsconfig.test.json && node --test 'dist-test/src/**/*.test.js'",
     "typecheck": "tsc -p tsconfig.build.json --noEmit"
   }
 }
