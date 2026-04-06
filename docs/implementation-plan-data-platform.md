@@ -34,6 +34,7 @@ Veja tambem: `docs/next-cycle-plan-web-app.md`
 Veja tambem: `docs/next-cycle-web-app-closeout.md`
 Veja tambem: `docs/next-cycle-plan-web-app-contexts.md`
 Veja tambem: `docs/next-cycle-web-app-contexts-closeout.md`
+Veja tambem: `docs/next-cycle-plan-web-app-slugs-and-tests.md`
 Veja tambem: `docs/next-cycle-plan-resident-scheduler.md`
 
 ## Objetivo
@@ -491,11 +492,12 @@ Concluido.
 
 ## Ordem sugerida agora
 
-1. evolucao de UX/leitura do web app
+1. slugs e testes do web app
 2. scheduler residente
 
 ### Motivo
 
 - o segundo ciclo do web app ja fechou a navegacao principal entre busca, partida, time e jogador
-- o proximo ganho no frontend tende a ser qualitativo: URL amigavel de partida, busca melhor e politica de cache
+- o proximo ganho mais direto e remover a dependencia de `?id=` e fechar a consistencia de URL do app
+- o frontend ja tem massa critica suficiente para justificar os primeiros testes do cliente HTTP/BFF
 - o scheduler residente continua fazendo mais sentido quando houver necessidade operacional continua
