@@ -4,7 +4,12 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataApiError, getMatchBySlug } from "@/lib/api/data-api";
-import { getSeasonHref, getTeamHref, getTournamentHref } from "@/lib/routes";
+import {
+  getPlayerHref,
+  getSeasonHref,
+  getTeamHref,
+  getTournamentHref,
+} from "@/lib/routes";
 
 type MatchPageProps = {
   params: Promise<{
@@ -196,9 +201,9 @@ export default async function MatchPage({ params }: MatchPageProps) {
                   </div>
                 </Link>
                 <div className="rounded-2xl border border-dashed border-[color:var(--border)] p-4 text-sm text-[color:var(--muted-foreground)]">
-                  Os jogadores ainda aparecem aqui apenas como dado exibido. Este
-                  contexto da partida ainda não expõe `slug` suficiente para navegação
-                  direta de lineup ou evento para perfil de jogador.
+                  Os jogadores da lineup agora abrem direto o perfil no app. Em
+                  eventos, a navegação aparece apenas quando o contexto trouxer `slug`
+                  suficiente para montar a URL pública do jogador.
                 </div>
               </CardContent>
             </Card>
@@ -210,8 +215,7 @@ export default async function MatchPage({ params }: MatchPageProps) {
             <CardHeader>
               <CardTitle>Eventos da partida</CardTitle>
               <CardDescription>
-                Incidentes em ordem cronológica observada. Time já é contexto da
-                partida; jogador ainda aparece só como dado exibido.
+                Incidentes em ordem cronológica observada.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -227,10 +231,32 @@ export default async function MatchPage({ params }: MatchPageProps) {
                           {event.incidentType}
                         </p>
                         <p className="text-sm text-[color:var(--muted-foreground)]">
-                          {event.teamName ?? "sem time"} · {event.playerName ?? "sem jogador"}
-                          {event.relatedPlayerName
-                            ? ` · relacionado: ${event.relatedPlayerName}`
-                            : ""}
+                          {event.teamName ?? "sem time"} ·{" "}
+                          {event.playerSlug && event.playerName ? (
+                            <Link
+                              href={getPlayerHref(event.playerSlug)}
+                              className="underline-offset-4 hover:underline"
+                            >
+                              {event.playerName}
+                            </Link>
+                          ) : (
+                            event.playerName ?? "sem jogador"
+                          )}
+                          {event.relatedPlayerName ? (
+                            <>
+                              {" · relacionado: "}
+                              {event.relatedPlayerSlug ? (
+                                <Link
+                                  href={getPlayerHref(event.relatedPlayerSlug)}
+                                  className="underline-offset-4 hover:underline"
+                                >
+                                  {event.relatedPlayerName}
+                                </Link>
+                              ) : (
+                                event.relatedPlayerName
+                              )}
+                            </>
+                          ) : null}
                         </p>
                       </div>
                       <div className="text-right text-sm text-[color:var(--muted-foreground)]">
@@ -273,7 +299,12 @@ export default async function MatchPage({ params }: MatchPageProps) {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-medium text-[color:var(--foreground)]">
-                          {player.playerName}
+                          <Link
+                            href={getPlayerHref(player.playerSlug)}
+                            className="underline-offset-4 hover:underline"
+                          >
+                            {player.playerName}
+                          </Link>
                         </p>
                         <p className="text-sm text-[color:var(--muted-foreground)]">
                           {player.position ?? "posição não informada"}
@@ -309,7 +340,12 @@ export default async function MatchPage({ params }: MatchPageProps) {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-medium text-[color:var(--foreground)]">
-                          {player.playerName}
+                          <Link
+                            href={getPlayerHref(player.playerSlug)}
+                            className="underline-offset-4 hover:underline"
+                          >
+                            {player.playerName}
+                          </Link>
                         </p>
                         <p className="text-sm text-[color:var(--muted-foreground)]">
                           {player.position ?? "posição não informada"}
