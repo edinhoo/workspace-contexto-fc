@@ -38,6 +38,8 @@ Veja tambem: `docs/next-cycle-plan-web-app-slugs-and-tests.md`
 Veja tambem: `docs/next-cycle-web-app-slugs-and-tests-closeout.md`
 Veja tambem: `docs/next-cycle-plan-web-app-search-and-cache.md`
 Veja tambem: `docs/next-cycle-web-app-search-and-cache-closeout.md`
+Veja tambem: `docs/next-cycle-plan-web-app-search-tests.md`
+Veja tambem: `docs/next-cycle-web-app-search-tests-closeout.md`
 Veja tambem: `docs/next-cycle-plan-resident-scheduler.md`
 Veja tambem: `docs/next-cycle-resident-scheduler-closeout.md`
 
@@ -526,22 +528,21 @@ Concluido.
 
 ## Ciclo incremental mais recente
 
-### Scheduler residente
+### Testes de busca e UX do web app
 
 Concluido.
 
 #### Resultado consolidado
 
-- o scheduler passou a ter um servico Node residente proprio
-- o loop continuo reaproveita o claim seguro ja validado
-- backlog vencido no boot e tratado no mesmo comportamento steady-state
-- a operacao de start, stop e restart ficou documentada
+- `SearchExperience` passou a ter testes de componente
+- a UX dos estados da busca ficou mais clara
+- a politica inicial de cache do cliente HTTP foi consolidada
+- a busca continua respondendo em tempo real sem reescrever a URL a cada tecla
 
 #### Limitacoes conhecidas
 
-- a iteracao continua com concorrencia efetiva `1`
-- o polling ainda e propositalmente simples
-- a validacao permaneceu no ambiente local
+- a cobertura continua focada no componente cliente da busca, nao na pagina inteira
+- a estrategia de cache ainda e inicial e deliberadamente simples
 
 ## Ordem sugerida agora
 
@@ -550,8 +551,9 @@ Concluido.
 
 ### Motivo
 
-- o scheduler residente ja cobre o ganho operacional mais estrutural deste momento
 - o web app continua sendo o trilho mais natural para descobrir novas necessidades de produto
+- o ciclo atual fechou a lacuna mais clara de teste/UX da busca
+- o scheduler residente ja cobre o ganho operacional mais estrutural deste momento
 - qualquer endurecimento adicional do scheduler agora pode ser puxado por uso real
 
 ### Recorte sugerido
@@ -560,12 +562,16 @@ Concluido.
 - refinamentos adicionais de cache por rota
 - endurecimento de observabilidade do scheduler apenas se o uso real pedir
 
+### Plano formalizado para o proximo ciclo
+
+- `docs/next-cycle-plan-web-app-search-tests.md`
+
 ## Contexto do ciclo concluido
 
-### Scheduler residente
+### Testes de busca e UX do web app
 
 O ciclo entregue fez:
 
-- criar um servico Node proprio para manter o scheduler em execucao continua
-- reaproveitar o mesmo runtime de processamento do modo CLI
-- validar backlog, idle e restart sem reabrir o pipeline de ingestao
+- adicionar testes de componente para `SearchExperience`
+- refinar a UX leve da busca cliente
+- consolidar a politica inicial de cache do cliente HTTP

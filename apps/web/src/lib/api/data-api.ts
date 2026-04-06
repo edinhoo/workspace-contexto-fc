@@ -9,6 +9,18 @@ const contentRevalidateSeconds = 300;
 
 type CachePolicy = "realtime" | "content";
 
+const cachePolicies = {
+  realtime: {
+    cache: "no-store" as const,
+  },
+  content: {
+    cache: "force-cache" as const,
+    next: {
+      revalidate: contentRevalidateSeconds,
+    },
+  },
+} satisfies Record<CachePolicy, Record<string, unknown>>;
+
 const getDataApiUrl = (): string =>
   process.env.DATA_API_URL?.trim() || defaultDataApiUrl;
 
@@ -78,24 +90,12 @@ const fetchDataApi = async <T>(
 ): Promise<T> => {
   let response: Response;
 
-  const cacheOptions =
-    cachePolicy === "content"
-      ? {
-          cache: "force-cache" as const,
-          next: {
-            revalidate: contentRevalidateSeconds,
-          },
-        }
-      : {
-          cache: "no-store" as const,
-        };
-
   try {
     response = await fetch(`${getDataApiUrl()}${path}`, {
       headers: {
         accept: "application/json",
       },
-      ...cacheOptions,
+      ...cachePolicies[cachePolicy],
     });
   } catch (error) {
     throw new DataApiError(502, "upstream_unavailable", "data-api unavailable", {
