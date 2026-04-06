@@ -61,6 +61,8 @@ const createDeferredResponse = (): {
 
 const flushDebounce = async () => {
   await act(async () => {
+    // Usa tempo real de proposito: esta suite cobre useDeferredValue + debounce
+    // e ficou mais estavel assim do que com fake timers globais.
     await new Promise((resolve) => setTimeout(resolve, 350));
   });
 };
