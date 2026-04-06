@@ -14,4 +14,6 @@ Fluxo recomendado:
 - releia o codigo so no ponto necessario para executar a tarefa atual
 - ao alterar comportamento relevante, atualize os docs correspondentes no mesmo ciclo
 - ao investigar inconsistencias em CSVs, valide primeiro as regras documentadas antes de propor mudancas estruturais
-
+- use sempre o template completo de commit em `.gitmessage.txt`
+- use sempre o template padrao de PR em `.github/pull_request_template.md`
+- ao preparar o repositorio local, rode `pnpm git:setup` para ativar template de commit e hooks versionados

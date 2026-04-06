@@ -100,10 +100,30 @@ Para habilitar no Git deste repositorio:
 git config commit.template .gitmessage.txt
 ```
 
+Ou use o setup local versionado do repositorio:
+
+```bash
+pnpm git:setup
+```
+
 Para verificar a configuracao atual:
 
 ```bash
 git config --get commit.template
+git config --get core.hooksPath
+```
+
+O repositorio agora tambem inclui:
+
+- hook versionado em `.githooks/commit-msg` para validar mensagens de commit
+- template padrao de PR em `.github/pull_request_template.md`
+- workflow no GitHub para validar mensagens de commit e descricao de PR
+
+Validacoes manuais disponiveis:
+
+```bash
+pnpm test:git-templates
+pnpm validate:commit-range HEAD~3..HEAD
 ```
 
 ## Como adicionar um novo servico

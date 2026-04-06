@@ -1,0 +1,41 @@
+name: Validate Contribution Templates
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+  push:
+    branches:
+      - "**"
+
+jobs:
+  validate-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate commit messages on pull request
+        if: github.event_name == 'pull_request'
+        run: node scripts/git/validate-commit-range.mjs "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+
+      - name: Validate commit messages on push
+        if: github.event_name == 'push'
+        run: node scripts/git/validate-commit-range.mjs "${{ github.event.before }}" "${{ github.sha }}"
+
+  validate-pr-body:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate PR body
+        run: node scripts/git/validate-pr-body.mjs --github-event "${{ github.event_path }}"

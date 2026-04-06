@@ -1,0 +1,3 @@
+#!/bin/sh
+
+node scripts/git/validate-commit-message.mjs "$1"
