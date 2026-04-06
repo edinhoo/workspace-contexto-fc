@@ -44,6 +44,7 @@ Veja tambem: `docs/next-cycle-plan-web-app-cross-navigation.md`
 Veja tambem: `docs/next-cycle-web-app-cross-navigation-closeout.md`
 Veja tambem: `docs/next-cycle-plan-web-app-tournament-season.md`
 Veja tambem: `docs/next-cycle-web-app-tournament-season-closeout.md`
+Veja tambem: `docs/next-cycle-plan-web-app-match-player.md`
 Veja tambem: `docs/next-cycle-plan-resident-scheduler.md`
 Veja tambem: `docs/next-cycle-resident-scheduler-closeout.md`
 
@@ -552,31 +553,28 @@ Concluido.
 
 ## Ordem sugerida agora
 
-1. refinamentos incrementais dos contextos ja existentes
-2. definir o proximo bloco funcional do web app a partir das lacunas observadas
+1. fechar a navegacao `match -> player`
+2. carregar mais dados para aumentar a densidade real dos contextos
 3. observabilidade operacional adicional do scheduler, se houver necessidade real
 
 ### Motivo
 
 - o web app continua sendo o trilho mais natural para descobrir novas necessidades de produto
-- o Ciclo B abriu os primeiros contextos secundarios sem forcar design prematuro
-- agora faz mais sentido observar o que falta nesses contextos antes de abrir outro bloco grande
-- os proximos recortes devem ser puxados pelo uso e pela leitura do dado no front
+- a lacuna mais visivel que restou esta na tela de partida, que ainda nao abre o perfil do jogador
+- esse recorte e pequeno, cirurgico e melhora a coerencia do app sem abrir outro contexto
+- depois disso, mais dados passam a valer mais do que mais superficie com banco raso
 
 ### Recorte sugerido
 
-- refinamentos incrementais do web app puxados pelas lacunas descobertas em:
-  - `match`
-  - `team`
-  - `player`
-  - `tournament`
-  - `season`
-- definicao do proximo contexto ou fluxo funcional so depois dessa revisao
+- adicionar `playerSlug` em `lineups` de `match`
+- navegar de lineup para `/players/[slug]`
+- tocar `events` so se o join continuar simples
+- depois disso, decidir o proximo recorte com mais dados no banco
 - endurecimento de observabilidade do scheduler apenas se o uso real pedir
 
 ### Plano formalizado para o proximo ciclo
 
-- a definir depois da revisao do Ciclo B
+- `docs/next-cycle-plan-web-app-match-player.md`
 
 ## Contexto do ciclo concluido
 
@@ -591,14 +589,13 @@ O ciclo entregue fez:
 
 ## Proximo ciclo formalizado
 
-### Proximo recorte a definir
+### Match para player
 
-O proximo recorte deve ser escolhido a partir do que os novos contextos revelaram
-na leitura do produto.
+O proximo recorte formalizado prioriza:
 
-O objetivo agora deixa de ser “abrir mais contexto por abrir” e passa a ser
-escolher o proximo passo com base em:
+- `lineups.playerSlug`
+- navegacao de `match -> player`
+- `events` com slug apenas se o custo continuar baixo
 
-- distribuicao real do dado
-- navegacao funcional ja existente
-- lacunas que ficaram mais visiveis no front
+O objetivo e fechar a lacuna funcional mais visivel da tela de partida antes de
+abrir novos contextos ou refinamentos maiores.
