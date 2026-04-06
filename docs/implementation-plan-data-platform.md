@@ -36,6 +36,8 @@ Veja tambem: `docs/next-cycle-plan-web-app-contexts.md`
 Veja tambem: `docs/next-cycle-web-app-contexts-closeout.md`
 Veja tambem: `docs/next-cycle-plan-web-app-slugs-and-tests.md`
 Veja tambem: `docs/next-cycle-web-app-slugs-and-tests-closeout.md`
+Veja tambem: `docs/next-cycle-plan-web-app-search-and-cache.md`
+Veja tambem: `docs/next-cycle-web-app-search-and-cache-closeout.md`
 Veja tambem: `docs/next-cycle-plan-resident-scheduler.md`
 
 ## Objetivo
@@ -521,13 +523,41 @@ Concluido.
 - `cache: "no-store"` continua sendo a estrategia padrao do cliente HTTP
 - a cobertura de testes ainda esta concentrada em cliente HTTP e BFF
 
+## Ciclo incremental mais recente
+
+### Busca e cache do web app
+
+Concluido.
+
+#### Resultado consolidado
+
+- a busca passou a ter resultados em tempo real com debounce
+- a URL continua representando apenas a busca confirmada
+- o cliente HTTP ganhou uma estrategia inicial de cache por contexto
+- a cobertura de testes do BFF/cliente foi ampliada
+
+#### Limitacoes conhecidas
+
+- a busca cliente ainda nao possui testes especificos de componente
+- a estrategia de cache ainda e inicial e deliberadamente simples
+
 ## Ordem sugerida agora
 
-1. UX de busca e cache inicial do web app
-2. scheduler residente
+1. scheduler residente
+2. refinamentos incrementais do web app
 
 ### Motivo
 
-- a consistencia de URL do app ja foi fechada
-- a proxima melhoria mais direta agora e na experiencia de uso e leitura
-- o scheduler residente continua fazendo mais sentido quando houver necessidade operacional continua
+- o web app ja tem base, contexto, slugs, testes e busca mais fluida
+- o scheduler residente volta a ser o proximo ganho mais evidente fora da camada de produto
+- os refinamentos restantes do app agora sao incrementais, nao travas estruturais
+
+## Contexto do ciclo concluido
+
+### Busca e cache do web app
+
+O ciclo entregue fez:
+
+- melhorar a busca para uma experiencia interativa com debounce
+- introduzir uma estrategia inicial de cache por rota
+- ampliar os testes do BFF/cliente para acompanhar esse comportamento

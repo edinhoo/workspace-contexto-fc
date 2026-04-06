@@ -70,8 +70,11 @@ describe("data-api client", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       "http://example.test:9999/matches/by-slug/atletico-mineiro-vs-palmeiras-2026-01-28",
       expect.objectContaining({
-        cache: "no-store",
+        cache: "force-cache",
         headers: { accept: "application/json" },
+        next: {
+          revalidate: 300,
+        },
       }),
     );
   });
@@ -133,7 +136,49 @@ describe("data-api client", () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       "http://127.0.0.1:3100/search?q=palmeiras&limit=5",
-      expect.any(Object),
+      expect.objectContaining({
+        cache: "no-store",
+      }),
+    );
+  });
+
+  it("uses cacheable fetch options for stable entity reads", async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          team: {
+            id: "team-1",
+            name: "Palmeiras",
+            slug: "palmeiras",
+            shortName: "Palmeiras",
+            code3: "PAL",
+            primaryColor: "#0B5D1E",
+            secondaryColor: "#F5F5F5",
+          },
+          filters: {
+            season: null,
+            tournament: null,
+            opponent: null,
+          },
+          recentMatches: [],
+          relatedPlayers: [],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getTeamBySlug("palmeiras");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:3100/teams/by-slug/palmeiras",
+      expect.objectContaining({
+        cache: "force-cache",
+        next: {
+          revalidate: 300,
+        },
+      }),
     );
   });
 

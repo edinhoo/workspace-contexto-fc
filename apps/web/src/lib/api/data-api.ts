@@ -5,6 +5,9 @@ import type { SearchResponse } from "@services/data-api/contracts/search";
 import type { TeamResponse } from "@services/data-api/contracts/teams";
 
 const defaultDataApiUrl = "http://127.0.0.1:3100";
+const contentRevalidateSeconds = 300;
+
+type CachePolicy = "realtime" | "content";
 
 const getDataApiUrl = (): string =>
   process.env.DATA_API_URL?.trim() || defaultDataApiUrl;
@@ -69,15 +72,30 @@ const parseDataApiError = async (
   );
 };
 
-const fetchDataApi = async <T>(path: string): Promise<T> => {
+const fetchDataApi = async <T>(
+  path: string,
+  cachePolicy: CachePolicy,
+): Promise<T> => {
   let response: Response;
+
+  const cacheOptions =
+    cachePolicy === "content"
+      ? {
+          cache: "force-cache" as const,
+          next: {
+            revalidate: contentRevalidateSeconds,
+          },
+        }
+      : {
+          cache: "no-store" as const,
+        };
 
   try {
     response = await fetch(`${getDataApiUrl()}${path}`, {
       headers: {
         accept: "application/json",
       },
-      cache: "no-store",
+      ...cacheOptions,
     });
   } catch (error) {
     throw new DataApiError(502, "upstream_unavailable", "data-api unavailable", {
@@ -102,23 +120,23 @@ export const searchEntities = async (
     params.set("limit", String(limit));
   }
 
-  return fetchDataApi<SearchResponse>(`/search?${params.toString()}`);
+  return fetchDataApi<SearchResponse>(`/search?${params.toString()}`, "realtime");
 };
 
 export const getMatch = async (id: string): Promise<MatchResponse> =>
-  fetchDataApi<MatchResponse>(`/matches/${id}`);
+  fetchDataApi<MatchResponse>(`/matches/${id}`, "content");
 
 export const getMatchBySlug = async (slug: string): Promise<MatchResponse> =>
-  fetchDataApi<MatchResponse>(`/matches/by-slug/${slug}`);
+  fetchDataApi<MatchResponse>(`/matches/by-slug/${slug}`, "content");
 
 export const getTeam = async (id: string): Promise<TeamResponse> =>
-  fetchDataApi<TeamResponse>(`/teams/${id}`);
+  fetchDataApi<TeamResponse>(`/teams/${id}`, "content");
 
 export const getTeamBySlug = async (slug: string): Promise<TeamResponse> =>
-  fetchDataApi<TeamResponse>(`/teams/by-slug/${slug}`);
+  fetchDataApi<TeamResponse>(`/teams/by-slug/${slug}`, "content");
 
 export const getPlayer = async (id: string): Promise<PlayerResponse> =>
-  fetchDataApi<PlayerResponse>(`/players/${id}`);
+  fetchDataApi<PlayerResponse>(`/players/${id}`, "content");
 
 export const getPlayerBySlug = async (slug: string): Promise<PlayerResponse> =>
-  fetchDataApi<PlayerResponse>(`/players/by-slug/${slug}`);
+  fetchDataApi<PlayerResponse>(`/players/by-slug/${slug}`, "content");
