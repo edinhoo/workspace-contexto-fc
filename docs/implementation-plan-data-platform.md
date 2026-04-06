@@ -33,6 +33,7 @@ Veja tambem: `docs/data-platform-program-closeout.md`
 Veja tambem: `docs/next-cycle-plan-web-app.md`
 Veja tambem: `docs/next-cycle-web-app-closeout.md`
 Veja tambem: `docs/next-cycle-plan-web-app-contexts.md`
+Veja tambem: `docs/next-cycle-web-app-contexts-closeout.md`
 Veja tambem: `docs/next-cycle-plan-resident-scheduler.md`
 
 ## Objetivo
@@ -490,11 +491,11 @@ Concluido.
 
 ## Ordem sugerida agora
 
-1. completar contextos do web app (`teams` e `players`)
+1. evolucao de UX/leitura do web app
 2. scheduler residente
 
 ### Motivo
 
-- o primeiro ciclo do web app confirmou a base e revelou a navegacao que ainda falta fechar
-- `teams` e `players` ja existem na `data-api`, entao o proximo ciclo aproveita uma base pronta
+- o segundo ciclo do web app ja fechou a navegacao principal entre busca, partida, time e jogador
+- o proximo ganho no frontend tende a ser qualitativo: URL amigavel de partida, busca melhor e politica de cache
 - o scheduler residente continua fazendo mais sentido quando houver necessidade operacional continua
