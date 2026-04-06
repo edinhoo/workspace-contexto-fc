@@ -5,8 +5,10 @@ import type { SearchItem } from "@services/data-api/contracts/search";
 import {
   getMatchHref,
   getPlayerHref,
+  getSeasonHref,
   getSearchItemHref,
   getTeamHref,
+  getTournamentHref,
 } from "./routes";
 
 const createSearchItem = (overrides: Partial<SearchItem> = {}): SearchItem => ({
@@ -25,6 +27,8 @@ describe("routes helpers", () => {
     );
     expect(getTeamHref("palmeiras")).toBe("/teams/palmeiras");
     expect(getPlayerHref("vitor-roque")).toBe("/players/vitor-roque");
+    expect(getTournamentHref("brasileirao")).toBe("/tournaments/brasileirao");
+    expect(getSeasonHref("season-1")).toBe("/seasons/season-1");
   });
 
   it("maps search items to public hrefs", () => {

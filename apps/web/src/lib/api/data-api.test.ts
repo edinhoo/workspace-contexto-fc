@@ -4,7 +4,9 @@ import {
   DataApiError,
   getMatchBySlug,
   getPlayerBySlug,
+  getSeason,
   getTeamBySlug,
+  getTournamentBySlug,
   searchEntities,
 } from "./data-api";
 
@@ -173,6 +175,69 @@ describe("data-api client", () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       "http://127.0.0.1:3100/teams/by-slug/palmeiras",
+      expect.objectContaining({
+        cache: "force-cache",
+        next: {
+          revalidate: 300,
+        },
+      }),
+    );
+  });
+
+  it("supports tournament and season reads as cacheable content", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            tournament: {
+              id: "tournament-1",
+              name: "Brasileirão",
+              slug: "brasileirao",
+            },
+            seasons: [],
+            recentMatches: [],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            season: {
+              id: "season-1",
+              name: "2026",
+              year: "2026",
+            },
+            tournament: {
+              id: "tournament-1",
+              name: "Brasileirão",
+              slug: "brasileirao",
+            },
+            recentMatches: [],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+      );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getTournamentBySlug("brasileirao");
+    await getSeason("season-1");
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "http://127.0.0.1:3100/tournaments/by-slug/brasileirao",
+      expect.objectContaining({
+        cache: "force-cache",
+        next: {
+          revalidate: 300,
+        },
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "http://127.0.0.1:3100/seasons/season-1",
       expect.objectContaining({
         cache: "force-cache",
         next: {
