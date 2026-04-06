@@ -20,6 +20,9 @@ const wait = (durationMs) =>
 const config = getResidentSchedulerConfig();
 
 let shouldStop = false;
+// activeRun e informacional: aparece no log de shutdown para indicar se havia
+// um item em execucao quando o sinal chegou. Nao e usado como trava de controle
+// porque o loop ja termina o item em curso naturalmente antes de verificar shouldStop.
 let activeRun = false;
 let idleCycles = 0;
 
