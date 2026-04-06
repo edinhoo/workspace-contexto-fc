@@ -3,15 +3,12 @@ import { notFound } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DataApiError, getTeam } from "@/lib/api/data-api";
+import { DataApiError, getTeamBySlug } from "@/lib/api/data-api";
 import { getMatchHref, getPlayerHref } from "@/lib/routes";
 
 type TeamPageProps = {
   params: Promise<{
     slug: string;
-  }>;
-  searchParams?: Promise<{
-    id?: string;
   }>;
 };
 
@@ -25,20 +22,11 @@ const formatScore = (value: number | null): string => (value === null ? "-" : St
 
 export default async function TeamPage({
   params,
-  searchParams,
 }: TeamPageProps) {
-  const [{ slug }, resolvedSearchParams] = await Promise.all([
-    params,
-    searchParams,
-  ]);
-  const id = resolvedSearchParams?.id?.trim();
-
-  if (!id) {
-    notFound();
-  }
+  const { slug } = await params;
 
   try {
-    const response = await getTeam(id);
+    const response = await getTeamBySlug(slug);
 
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-6 py-10 md:px-10">
@@ -99,7 +87,7 @@ export default async function TeamPage({
             <CardContent className="space-y-4">
               {response.recentMatches.length ? (
                 response.recentMatches.map((match) => (
-                  <Link key={match.id} href={getMatchHref(match.id)}>
+                  <Link key={match.id} href={getMatchHref(match.slug)}>
                     <div className="rounded-2xl border border-[color:var(--border)] p-4 transition hover:border-black/20">
                       <div className="flex flex-wrap items-center gap-3">
                         <Badge variant="secondary">{match.tournamentName}</Badge>
@@ -142,7 +130,7 @@ export default async function TeamPage({
               {response.relatedPlayers.map((player) => (
                 <Link
                   key={player.id}
-                  href={getPlayerHref(player.slug, player.id)}
+                  href={getPlayerHref(player.slug)}
                 >
                   <div className="rounded-2xl border border-[color:var(--border)] p-4 transition hover:border-black/20">
                     <div className="flex items-start justify-between gap-3">

@@ -108,8 +108,17 @@ export const searchEntities = async (
 export const getMatch = async (id: string): Promise<MatchResponse> =>
   fetchDataApi<MatchResponse>(`/matches/${id}`);
 
+export const getMatchBySlug = async (slug: string): Promise<MatchResponse> =>
+  fetchDataApi<MatchResponse>(`/matches/by-slug/${slug}`);
+
 export const getTeam = async (id: string): Promise<TeamResponse> =>
   fetchDataApi<TeamResponse>(`/teams/${id}`);
 
+export const getTeamBySlug = async (slug: string): Promise<TeamResponse> =>
+  fetchDataApi<TeamResponse>(`/teams/by-slug/${slug}`);
+
 export const getPlayer = async (id: string): Promise<PlayerResponse> =>
   fetchDataApi<PlayerResponse>(`/players/${id}`);
+
+export const getPlayerBySlug = async (slug: string): Promise<PlayerResponse> =>
+  fetchDataApi<PlayerResponse>(`/players/by-slug/${slug}`);

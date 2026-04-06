@@ -3,11 +3,11 @@ import { notFound } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DataApiError, getMatch } from "@/lib/api/data-api";
+import { DataApiError, getMatchBySlug } from "@/lib/api/data-api";
 
 type MatchPageProps = {
   params: Promise<{
-    id: string;
+    slug: string;
   }>;
 };
 
@@ -20,10 +20,10 @@ const formatMatchDate = (value: string): string =>
 const formatScore = (value: number | null): string => (value === null ? "-" : String(value));
 
 export default async function MatchPage({ params }: MatchPageProps) {
-  const { id } = await params;
+  const { slug } = await params;
 
   try {
-    const response = await getMatch(id);
+    const response = await getMatchBySlug(slug);
     const homeLineup = response.lineups.filter(
       (lineup) => lineup.teamId === response.homeTeam.id,
     );
@@ -50,6 +50,9 @@ export default async function MatchPage({ params }: MatchPageProps) {
                 <Badge variant="secondary">{response.tournament.name}</Badge>
                 <span className="text-sm text-[color:var(--muted-foreground)]">
                   {response.season.name}
+                </span>
+                <span className="text-sm text-[color:var(--muted-foreground)]">
+                  slug: {response.match.slug}
                 </span>
               </div>
               <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-center">
@@ -84,44 +87,45 @@ export default async function MatchPage({ params }: MatchPageProps) {
             <CardContent className="grid gap-3 text-sm text-[color:var(--muted-foreground)] md:grid-cols-3">
               <div>
                 <span className="font-medium text-[color:var(--foreground)]">Rodada:</span>{" "}
-                {response.match.round ?? "nao informada"}
+                {response.match.round ?? "não informada"}
               </div>
               <div>
                 <span className="font-medium text-[color:var(--foreground)]">Estádio:</span>{" "}
-                {response.stadium
-                  ? `${response.stadium.name}${response.stadium.cityName ? `, ${response.stadium.cityName}` : ""}`
-                  : "nao informado"}
+                {response.stadium?.name ?? "não informado"}
               </div>
               <div>
                 <span className="font-medium text-[color:var(--foreground)]">Árbitro:</span>{" "}
-                {response.referee?.name ?? "nao informado"}
+                {response.referee?.name ?? "não informado"}
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Resumo deste contexto</CardTitle>
+              <CardTitle>Stats do time</CardTitle>
               <CardDescription>
-                Esta primeira versao foca em cabecalho, eventos e lineups.
+                O `statPayload` permanece livre nesta etapa.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--secondary)] p-4">
-                <p className="font-medium text-[color:var(--foreground)]">Eventos</p>
-                <p className="mt-1 text-[color:var(--muted-foreground)]">
-                  {response.events.length} itens ordenados por `sortOrder`.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--secondary)] p-4">
-                <p className="font-medium text-[color:var(--foreground)]">Lineups</p>
-                <p className="mt-1 text-[color:var(--muted-foreground)]">
-                  {response.lineups.length} jogadores observados neste snapshot.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-dashed border-[color:var(--border)] p-4 text-[color:var(--muted-foreground)]">
-                `teamStats.statPayload` fica para um proximo ciclo, quando o shape
-                de leitura estiver mais claro.
+            <CardContent className="space-y-3">
+              {response.teamStats.map((stats) => (
+                <div
+                  key={stats.id}
+                  className="rounded-2xl border border-[color:var(--border)] p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-medium text-[color:var(--foreground)]">
+                      {stats.teamName}
+                    </p>
+                    <Badge variant="secondary">
+                      {Object.keys(stats.statPayload).length} chaves
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+              <div className="rounded-2xl border border-dashed border-[color:var(--border)] p-4 text-sm text-[color:var(--muted-foreground)]">
+                O próximo ciclo pode transformar `teamStats.statPayload` em blocos mais
+                legíveis se essa leitura se mostrar recorrente.
               </div>
             </CardContent>
           </Card>
@@ -132,7 +136,7 @@ export default async function MatchPage({ params }: MatchPageProps) {
             <CardHeader>
               <CardTitle>Eventos da partida</CardTitle>
               <CardDescription>
-                Linha do tempo ordenada a partir do que a `data-api` já entrega.
+                Incidentes em ordem cronológica observada.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -142,37 +146,29 @@ export default async function MatchPage({ params }: MatchPageProps) {
                     key={event.id}
                     className="rounded-2xl border border-[color:var(--border)] p-4"
                   >
-                    <div className="flex flex-wrap items-center gap-3">
-                      <Badge variant="secondary">{event.incidentType}</Badge>
-                      {event.minute ? (
-                        <span className="text-sm font-medium text-[color:var(--foreground)]">
-                          {event.minute}
-                          {event.addedTime ? `+${event.addedTime}` : ""}'
-                        </span>
-                      ) : null}
-                      {event.teamName ? (
-                        <span className="text-sm text-[color:var(--muted-foreground)]">
-                          {event.teamName}
-                        </span>
-                      ) : null}
-                    </div>
-                    <div className="mt-3 space-y-1">
-                      {event.playerName ? (
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
                         <p className="font-medium text-[color:var(--foreground)]">
-                          {event.playerName}
+                          {event.incidentType}
                         </p>
-                      ) : null}
-                      {event.relatedPlayerName ? (
                         <p className="text-sm text-[color:var(--muted-foreground)]">
-                          Relacionado: {event.relatedPlayerName}
+                          {event.teamName ?? "sem time"} · {event.playerName ?? "sem jogador"}
+                          {event.relatedPlayerName
+                            ? ` · relacionado: ${event.relatedPlayerName}`
+                            : ""}
                         </p>
-                      ) : null}
-                      {event.homeScore || event.awayScore ? (
-                        <p className="text-sm text-[color:var(--muted-foreground)]">
-                          Placar no momento: {event.homeScore ?? "-"} x{" "}
-                          {event.awayScore ?? "-"}
+                      </div>
+                      <div className="text-right text-sm text-[color:var(--muted-foreground)]">
+                        <p>
+                          {event.minute ?? "-"}
+                          {event.addedTime ? `+${event.addedTime}` : ""}
                         </p>
-                      ) : null}
+                        {event.homeScore !== null || event.awayScore !== null ? (
+                          <p>
+                            {event.homeScore ?? "-"} x {event.awayScore ?? "-"}
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                 ))
