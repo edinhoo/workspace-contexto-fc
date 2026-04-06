@@ -1,6 +1,8 @@
 import type { ErrorResponse } from "@services/data-api/contracts/common";
 import type { MatchResponse } from "@services/data-api/contracts/matches";
+import type { PlayerResponse } from "@services/data-api/contracts/players";
 import type { SearchResponse } from "@services/data-api/contracts/search";
+import type { TeamResponse } from "@services/data-api/contracts/teams";
 
 const defaultDataApiUrl = "http://127.0.0.1:3100";
 
@@ -105,3 +107,9 @@ export const searchEntities = async (
 
 export const getMatch = async (id: string): Promise<MatchResponse> =>
   fetchDataApi<MatchResponse>(`/matches/${id}`);
+
+export const getTeam = async (id: string): Promise<TeamResponse> =>
+  fetchDataApi<TeamResponse>(`/teams/${id}`);
+
+export const getPlayer = async (id: string): Promise<PlayerResponse> =>
+  fetchDataApi<PlayerResponse>(`/players/${id}`);
