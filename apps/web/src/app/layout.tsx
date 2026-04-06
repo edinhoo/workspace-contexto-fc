@@ -1,13 +1,7 @@
 import type { Metadata } from "next";
-import { Sora } from "next/font/google";
 import type { ReactNode } from "react";
 
 import "./globals.css";
-
-const sora = Sora({
-  subsets: ["latin"],
-  variable: "--font-sora"
-});
 
 export const metadata: Metadata = {
   title: "Contexto FC Web",
@@ -21,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={sora.variable}>{children}</body>
+      <body>{children}</body>
     </html>
   );
 }
