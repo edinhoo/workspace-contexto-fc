@@ -38,6 +38,7 @@ Veja tambem: `docs/next-cycle-plan-web-app-slugs-and-tests.md`
 Veja tambem: `docs/next-cycle-web-app-slugs-and-tests-closeout.md`
 Veja tambem: `docs/next-cycle-plan-web-app-search-and-cache.md`
 Veja tambem: `docs/next-cycle-web-app-search-and-cache-closeout.md`
+Veja tambem: `docs/next-cycle-plan-web-app-search-tests.md`
 Veja tambem: `docs/next-cycle-plan-resident-scheduler.md`
 Veja tambem: `docs/next-cycle-resident-scheduler-closeout.md`
 
@@ -559,6 +560,10 @@ Concluido.
 - testes de componente da busca e UX incremental do web app
 - refinamentos adicionais de cache por rota
 - endurecimento de observabilidade do scheduler apenas se o uso real pedir
+
+### Plano formalizado para o proximo ciclo
+
+- `docs/next-cycle-plan-web-app-search-tests.md`
 
 ## Contexto do ciclo concluido
 
