@@ -40,6 +40,7 @@ Veja tambem: `docs/next-cycle-plan-web-app-search-and-cache.md`
 Veja tambem: `docs/next-cycle-web-app-search-and-cache-closeout.md`
 Veja tambem: `docs/next-cycle-plan-web-app-search-tests.md`
 Veja tambem: `docs/next-cycle-web-app-search-tests-closeout.md`
+Veja tambem: `docs/next-cycle-plan-web-app-cross-navigation.md`
 Veja tambem: `docs/next-cycle-plan-resident-scheduler.md`
 Veja tambem: `docs/next-cycle-resident-scheduler-closeout.md`
 
@@ -546,25 +547,31 @@ Concluido.
 
 ## Ordem sugerida agora
 
-1. refinamentos incrementais do web app
-2. observabilidade operacional adicional do scheduler, se houver necessidade real
+1. navegacao cruzada entre contextos existentes
+2. novos contextos minimos de `tournament` e `season`
+3. observabilidade operacional adicional do scheduler, se houver necessidade real
 
 ### Motivo
 
 - o web app continua sendo o trilho mais natural para descobrir novas necessidades de produto
 - o ciclo atual fechou a lacuna mais clara de teste/UX da busca
-- o scheduler residente ja cobre o ganho operacional mais estrutural deste momento
-- qualquer endurecimento adicional do scheduler agora pode ser puxado por uso real
+- navegar melhor entre `match`, `team` e `player` deve revelar lacunas reais antes de abrir contextos novos
+- separar navegacao cruzada de `tournament` e `season` deixa os proximos PRs menores e mais faceis de revisar
 
 ### Recorte sugerido
 
-- testes de componente da busca e UX incremental do web app
-- refinamentos adicionais de cache por rota
+- Ciclo A:
+  - navegacao cruzada entre `match`, `team` e `player`
+  - so frontend
+  - sem novos endpoints na `data-api`
+- Ciclo B:
+  - contextos minimos de `tournament` e `season`
+  - com endpoints minimos na `data-api`
 - endurecimento de observabilidade do scheduler apenas se o uso real pedir
 
 ### Plano formalizado para o proximo ciclo
 
-- `docs/next-cycle-plan-web-app-search-tests.md`
+- `docs/next-cycle-plan-web-app-cross-navigation.md`
 
 ## Contexto do ciclo concluido
 
@@ -575,3 +582,25 @@ O ciclo entregue fez:
 - adicionar testes de componente para `SearchExperience`
 - refinar a UX leve da busca cliente
 - consolidar a politica inicial de cache do cliente HTTP
+
+## Proximo ciclo formalizado
+
+### Navegacao cruzada entre contextos existentes
+
+O proximo ciclo formalizado prioriza:
+
+- links mais claros de `match` para `team`
+- consolidacao de `team -> match` e `team -> player`
+- consolidacao de `player -> team` e `player -> match`
+- pequenos blocos de contexto relacionado nas telas ja existentes
+
+Este recorte foi fechado como Ciclo A para manter a iteracao:
+
+- curta
+- so frontend
+- sem novos endpoints
+
+Com isso, o Ciclo B fica naturalmente preparado para:
+
+- `tournament`
+- `season`
