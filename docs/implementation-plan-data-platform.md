@@ -30,6 +30,10 @@ Veja tambem: `docs/phase-7-source-extension-notes.md`
 Veja tambem: `docs/phase-7-validation-report.md`
 Veja tambem: `docs/phase-7-closeout.md`
 Veja tambem: `docs/data-platform-program-closeout.md`
+Veja tambem: `docs/next-cycle-plan-web-app.md`
+Veja tambem: `docs/next-cycle-web-app-closeout.md`
+Veja tambem: `docs/next-cycle-plan-web-app-contexts.md`
+Veja tambem: `docs/next-cycle-plan-resident-scheduler.md`
 
 ## Objetivo
 
@@ -460,3 +464,37 @@ Se a meta for reduzir risco e ganhar velocidade real, o melhor recorte inicial e
 4. Fase 3 com o scraper escrevendo no banco
 
 Depois disso, o projeto ja sai da dependencia operacional de CSV e entra numa base muito mais segura para construir API, automacao e CMS.
+
+## Depois do plano original
+
+Com o plano de 7 fases concluido, os proximos trabalhos deixam de ser fases fundacionais e passam a ser ciclos incrementais.
+
+## Ciclo incremental atual - Web App Inicial
+
+### Status
+
+Concluido.
+
+### Resultado consolidado
+
+- `apps/web` criado com `Next.js`
+- BFF inicial funcionando sobre a `data-api`
+- busca validada com dados reais
+- contexto inicial de partida validado com dados reais
+
+### Limitacoes conhecidas
+
+- navegacao da busca ainda fecha apenas para `match`
+- a URL atual de partida ainda usa `id` interno, nao `slug`
+- busca continua orientada a submit, nao a interacao em tempo real
+
+## Ordem sugerida agora
+
+1. completar contextos do web app (`teams` e `players`)
+2. scheduler residente
+
+### Motivo
+
+- o primeiro ciclo do web app confirmou a base e revelou a navegacao que ainda falta fechar
+- `teams` e `players` ja existem na `data-api`, entao o proximo ciclo aproveita uma base pronta
+- o scheduler residente continua fazendo mais sentido quando houver necessidade operacional continua

@@ -1,6 +1,8 @@
+import cors from "@fastify/cors";
 import Fastify, { type FastifyInstance } from "fastify";
 
 import { createDb } from "./db/client.js";
+import { getConfig } from "./config.js";
 import { registerErrorHandler } from "./http/error.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerMatchRoutes } from "./routes/matches.js";
@@ -10,16 +12,23 @@ import { registerTeamRoutes } from "./routes/teams.js";
 import type { DbClient } from "./types.js";
 
 export const createApp = (db: DbClient = createDb()): FastifyInstance => {
+  const config = getConfig();
   const app = Fastify({
     logger: false,
   });
 
   app.addHook("onRequest", async (request) => {
-    console.info(JSON.stringify({
-      event: "request_started",
-      method: request.method,
-      url: request.url,
-    }));
+    console.info(
+      JSON.stringify({
+        event: "request_started",
+        method: request.method,
+        url: request.url,
+      }),
+    );
+  });
+
+  app.register(cors, {
+    origin: config.corsOrigins,
   });
 
   registerErrorHandler(app);
