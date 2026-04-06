@@ -35,6 +35,7 @@ Veja tambem: `docs/next-cycle-web-app-closeout.md`
 Veja tambem: `docs/next-cycle-plan-web-app-contexts.md`
 Veja tambem: `docs/next-cycle-web-app-contexts-closeout.md`
 Veja tambem: `docs/next-cycle-plan-web-app-slugs-and-tests.md`
+Veja tambem: `docs/next-cycle-web-app-slugs-and-tests-closeout.md`
 Veja tambem: `docs/next-cycle-plan-resident-scheduler.md`
 
 ## Objetivo
@@ -471,9 +472,9 @@ Depois disso, o projeto ja sai da dependencia operacional de CSV e entra numa ba
 
 Com o plano de 7 fases concluido, os proximos trabalhos deixam de ser fases fundacionais e passam a ser ciclos incrementais.
 
-## Ciclo incremental atual - Web App Inicial
+## Ciclos incrementais do Web App
 
-### Status
+### Ciclo 1 - Fundacao inicial
 
 Concluido.
 
@@ -490,14 +491,43 @@ Concluido.
 - a URL atual de partida ainda usa `id` interno, nao `slug`
 - busca continua orientada a submit, nao a interacao em tempo real
 
+### Ciclo 2 - Contextos principais
+
+Concluido.
+
+#### Resultado consolidado
+
+- busca, partida, time e jogador passaram a ter navegacao cruzada funcional
+- `team` e `player` adotaram URL publica por `slug`
+- o app ainda dependia de `?id=` para lookup interno
+
+### Ciclo 3 - Slugs e testes
+
+Concluido.
+
+#### Resultado consolidado
+
+- `services/data-api` ganhou lookup canonico por `slug`
+- o app passou a usar URLs publicas coerentes para:
+  - `/matches/[slug]`
+  - `/teams/[slug]`
+  - `/players/[slug]`
+- `team` e `player` deixaram de depender de `?id=`
+- o `apps/web` ganhou a primeira base de testes com `Vitest`
+
+#### Limitacoes conhecidas
+
+- busca ainda e por submit, nao por digitacao incremental
+- `cache: "no-store"` continua sendo a estrategia padrao do cliente HTTP
+- a cobertura de testes ainda esta concentrada em cliente HTTP e BFF
+
 ## Ordem sugerida agora
 
-1. slugs e testes do web app
+1. UX de busca e cache inicial do web app
 2. scheduler residente
 
 ### Motivo
 
-- o segundo ciclo do web app ja fechou a navegacao principal entre busca, partida, time e jogador
-- o proximo ganho mais direto e remover a dependencia de `?id=` e fechar a consistencia de URL do app
-- o frontend ja tem massa critica suficiente para justificar os primeiros testes do cliente HTTP/BFF
+- a consistencia de URL do app ja foi fechada
+- a proxima melhoria mais direta agora e na experiencia de uso e leitura
 - o scheduler residente continua fazendo mais sentido quando houver necessidade operacional continua
