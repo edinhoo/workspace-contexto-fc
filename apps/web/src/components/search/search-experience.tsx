@@ -139,6 +139,7 @@ export function SearchExperience({
         }
 
         setItems(payload.items);
+        setResolvedQuery(normalizedQuery);
         setStatus(getStatusFromItems(normalizedQuery, payload.items));
         setErrorMessage(null);
       } catch (error) {
