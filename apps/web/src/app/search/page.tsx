@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { searchEntities } from "@/lib/api/data-api";
+import { getSearchItemHref } from "@/lib/routes";
 
 type SearchPageProps = {
   searchParams?: Promise<{
@@ -18,14 +19,6 @@ const typeLabels: Record<SearchItem["type"], string> = {
   match: "Partida",
   player: "Jogador",
   team: "Time",
-};
-
-const getItemHref = (item: SearchItem): string | null => {
-  if (item.type === "match") {
-    return `/matches/${item.id}`;
-  }
-
-  return null;
 };
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
@@ -83,7 +76,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       ) : response?.items.length ? (
         <section className="grid gap-4">
           {response.items.map((item) => {
-            const href = getItemHref(item);
+            const href = getSearchItemHref(item);
             const content = (
               <Card className="h-full border-black/10 bg-white/80 transition hover:border-black/20 hover:bg-white">
                 <CardHeader className="gap-3">
@@ -104,7 +97,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 </CardHeader>
                 {!href ? (
                   <CardContent className="pt-0 text-sm text-[color:var(--muted-foreground)]">
-                    Navegação desta entidade entra em um próximo ciclo.
+                    Esta entidade ainda depende de um caminho amigável próprio no app.
                   </CardContent>
                 ) : null}
               </Card>
