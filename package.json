@@ -16,6 +16,7 @@
     "directus:up": "docker compose -f infra/docker/docker-compose.yml up -d directus",
     "directus:validate:phase6": "node scripts/directus/validate-phase6.mjs",
     "lint": "turbo run lint",
+    "scheduler:resident": "pnpm --filter @services/resident-scheduler start",
     "scrape:sofascore": "pnpm --filter @services/sofascore scrape",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
