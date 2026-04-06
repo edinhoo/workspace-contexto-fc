@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataApiError, getMatchBySlug } from "@/lib/api/data-api";
-import { getTeamHref } from "@/lib/routes";
+import { getSeasonHref, getTeamHref, getTournamentHref } from "@/lib/routes";
 
 type MatchPageProps = {
   params: Promise<{
@@ -48,10 +48,15 @@ export default async function MatchPage({ params }: MatchPageProps) {
           <Card>
             <CardHeader className="gap-4">
               <div className="flex flex-wrap items-center gap-3">
-                <Badge variant="secondary">{response.tournament.name}</Badge>
-                <span className="text-sm text-[color:var(--muted-foreground)]">
+                <Link href={getTournamentHref(response.tournament.slug)}>
+                  <Badge variant="secondary">{response.tournament.name}</Badge>
+                </Link>
+                <Link
+                  href={getSeasonHref(response.season.id)}
+                  className="text-sm text-[color:var(--muted-foreground)] underline-offset-4 hover:underline"
+                >
                   {response.season.name}
-                </span>
+                </Link>
                 <span className="text-sm text-[color:var(--muted-foreground)]">
                   slug: {response.match.slug}
                 </span>

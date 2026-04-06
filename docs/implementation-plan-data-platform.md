@@ -42,6 +42,8 @@ Veja tambem: `docs/next-cycle-plan-web-app-search-tests.md`
 Veja tambem: `docs/next-cycle-web-app-search-tests-closeout.md`
 Veja tambem: `docs/next-cycle-plan-web-app-cross-navigation.md`
 Veja tambem: `docs/next-cycle-web-app-cross-navigation-closeout.md`
+Veja tambem: `docs/next-cycle-plan-web-app-tournament-season.md`
+Veja tambem: `docs/next-cycle-web-app-tournament-season-closeout.md`
 Veja tambem: `docs/next-cycle-plan-resident-scheduler.md`
 Veja tambem: `docs/next-cycle-resident-scheduler-closeout.md`
 
@@ -530,70 +532,73 @@ Concluido.
 
 ## Ciclo incremental mais recente
 
-### Navegacao cruzada entre contextos existentes
+### Tournament e season
 
 Concluido.
 
 #### Resultado consolidado
 
-- `match`, `team` e `player` passaram a formar uma navegacao cruzada mais clara
-- a tela de partida passou a destacar melhor os contextos relacionados
-- o app tornou mais explicita a diferenca entre dado navegavel e dado apenas exibido
-- o ciclo continuou so frontend, sem reabrir contratos da `data-api`
+- a `data-api` passou a expor contextos minimos de `tournament` e `season`
+- o app passou a ter:
+  - `/tournaments/[slug]`
+  - `/seasons/[id]`
+- a tela de partida agora abre os dois novos contextos
+- o ciclo continuou deliberadamente enxuto, sem standings nem agregacoes artificiais
 
 #### Limitacoes conhecidas
 
-- o contexto de partida ainda nao navega diretamente para jogador
-- `tournament` e `season` ainda nao existem como contextos proprios
+- `season` continua em rota publica por `id`
+- os novos contextos ainda tem baixa densidade de conteudo com banco pequeno
 
 ## Ordem sugerida agora
 
-1. novos contextos minimos de `tournament` e `season`
-2. refinamentos incrementais do web app a partir das lacunas descobertas
+1. refinamentos incrementais dos contextos ja existentes
+2. definir o proximo bloco funcional do web app a partir das lacunas observadas
 3. observabilidade operacional adicional do scheduler, se houver necessidade real
 
 ### Motivo
 
 - o web app continua sendo o trilho mais natural para descobrir novas necessidades de produto
-- o Ciclo A validou melhor a navegacao entre os contextos atuais
-- o proximo ganho estrutural de informacao agora passa por abrir `tournament` e `season`
-- a separacao entre contextos existentes e contextos novos manteve os PRs menores e mais faceis de revisar
+- o Ciclo B abriu os primeiros contextos secundarios sem forcar design prematuro
+- agora faz mais sentido observar o que falta nesses contextos antes de abrir outro bloco grande
+- os proximos recortes devem ser puxados pelo uso e pela leitura do dado no front
 
 ### Recorte sugerido
 
-- Ciclo B:
-  - contextos minimos de `tournament` e `season`
-  - com endpoints minimos na `data-api`
-- refinamentos incrementais do web app puxados pelas lacunas descobertas no Ciclo A
+- refinamentos incrementais do web app puxados pelas lacunas descobertas em:
+  - `match`
+  - `team`
+  - `player`
+  - `tournament`
+  - `season`
+- definicao do proximo contexto ou fluxo funcional so depois dessa revisao
 - endurecimento de observabilidade do scheduler apenas se o uso real pedir
 
 ### Plano formalizado para o proximo ciclo
 
-- a definir a partir do recorte de `tournament` e `season`
+- a definir depois da revisao do Ciclo B
 
 ## Contexto do ciclo concluido
 
-### Navegacao cruzada entre contextos existentes
+### Tournament e season
 
 O ciclo entregue fez:
 
-- reforcar a navegacao de `match` para `team`
-- consolidar a navegacao de `team` para `match` e `player`
-- consolidar a navegacao de `player` para `team` e `match`
-- deixar mais claro onde a tela de partida ainda exibe jogador sem link navegavel
+- abrir suporte minimo na `data-api` para `tournament` e `season`
+- criar as telas `/tournaments/[slug]` e `/seasons/[id]`
+- conectar a tela de partida a esses dois contextos
+- validar o fluxo com dado real local
 
 ## Proximo ciclo formalizado
 
-### Ciclo B - Novos contextos minimos
+### Proximo recorte a definir
 
-O proximo ciclo formalizado prioriza:
+O proximo recorte deve ser escolhido a partir do que os novos contextos revelaram
+na leitura do produto.
 
-- `tournament`
-- `season`
-- endpoints minimos na `data-api`
-- navegacao funcional a partir dos contextos ja existentes
+O objetivo agora deixa de ser “abrir mais contexto por abrir” e passa a ser
+escolher o proximo passo com base em:
 
-Este recorte deve entrar como continuacao natural do aprendizado do Ciclo A:
-
-- depois da navegacao cruzada ja validada entre `match`, `team` e `player`
-- sem misturar novos contextos com o endurecimento basico das telas atuais
+- distribuicao real do dado
+- navegacao funcional ja existente
+- lacunas que ficaram mais visiveis no front

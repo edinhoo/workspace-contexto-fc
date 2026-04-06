@@ -1,8 +1,10 @@
 import type { ErrorResponse } from "@services/data-api/contracts/common";
 import type { MatchResponse } from "@services/data-api/contracts/matches";
 import type { PlayerResponse } from "@services/data-api/contracts/players";
+import type { SeasonResponse } from "@services/data-api/contracts/seasons";
 import type { SearchResponse } from "@services/data-api/contracts/search";
 import type { TeamResponse } from "@services/data-api/contracts/teams";
+import type { TournamentResponse } from "@services/data-api/contracts/tournaments";
 
 const defaultDataApiUrl = "http://127.0.0.1:3100";
 const contentRevalidateSeconds = 300;
@@ -140,3 +142,11 @@ export const getPlayer = async (id: string): Promise<PlayerResponse> =>
 
 export const getPlayerBySlug = async (slug: string): Promise<PlayerResponse> =>
   fetchDataApi<PlayerResponse>(`/players/by-slug/${slug}`, "content");
+
+export const getTournamentBySlug = async (
+  slug: string,
+): Promise<TournamentResponse> =>
+  fetchDataApi<TournamentResponse>(`/tournaments/by-slug/${slug}`, "content");
+
+export const getSeason = async (id: string): Promise<SeasonResponse> =>
+  fetchDataApi<SeasonResponse>(`/seasons/${id}`, "content");

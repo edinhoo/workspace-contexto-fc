@@ -23,7 +23,9 @@ export type TournamentTable = {
 
 export type SeasonTable = {
   id: string;
+  slug: string;
   name: string;
+  tournament: string;
   year: string | null;
 };
 

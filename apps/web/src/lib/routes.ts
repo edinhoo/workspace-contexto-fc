@@ -6,6 +6,10 @@ export const getPlayerHref = (slug: string): string => `/players/${slug}`;
 
 export const getMatchHref = (slug: string): string => `/matches/${slug}`;
 
+export const getTournamentHref = (slug: string): string => `/tournaments/${slug}`;
+
+export const getSeasonHref = (id: string): string => `/seasons/${id}`;
+
 export const getSearchItemHref = (item: SearchItem): string | null => {
   if (item.type === "match" && item.slug) {
     return getMatchHref(item.slug);
