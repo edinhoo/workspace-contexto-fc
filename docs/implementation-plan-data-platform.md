@@ -45,6 +45,7 @@ Veja tambem: `docs/next-cycle-web-app-cross-navigation-closeout.md`
 Veja tambem: `docs/next-cycle-plan-web-app-tournament-season.md`
 Veja tambem: `docs/next-cycle-web-app-tournament-season-closeout.md`
 Veja tambem: `docs/next-cycle-plan-web-app-match-player.md`
+Veja tambem: `docs/next-cycle-web-app-match-player-closeout.md`
 Veja tambem: `docs/next-cycle-plan-resident-scheduler.md`
 Veja tambem: `docs/next-cycle-resident-scheduler-closeout.md`
 
@@ -553,49 +554,51 @@ Concluido.
 
 ## Ordem sugerida agora
 
-1. fechar a navegacao `match -> player`
-2. carregar mais dados para aumentar a densidade real dos contextos
+1. carregar mais dados para aumentar a densidade real dos contextos
+2. decidir se `tournament` e `season` entram na busca
 3. observabilidade operacional adicional do scheduler, se houver necessidade real
 
 ### Motivo
 
 - o web app continua sendo o trilho mais natural para descobrir novas necessidades de produto
-- a lacuna mais visivel que restou esta na tela de partida, que ainda nao abre o perfil do jogador
-- esse recorte e pequeno, cirurgico e melhora a coerencia do app sem abrir outro contexto
-- depois disso, mais dados passam a valer mais do que mais superficie com banco raso
+- o gap mais visivel de `match -> player` foi fechado
+- agora o principal limitador para validar melhor os contextos e a baixa densidade do banco
+- com mais dados, fica mais facil decidir se a proxima expansao deve ir para busca, novos contextos ou refinamentos funcionais
 
 ### Recorte sugerido
 
-- adicionar `playerSlug` em `lineups` de `match`
-- navegar de lineup para `/players/[slug]`
-- tocar `events` so se o join continuar simples
-- depois disso, decidir o proximo recorte com mais dados no banco
+- carregar mais eventos reais no banco
+- observar a distribuicao de conteudo em:
+  - `match`
+  - `team`
+  - `player`
+  - `tournament`
+  - `season`
+- decidir depois se a busca deve passar a incluir `tournament` e `season`
 - endurecimento de observabilidade do scheduler apenas se o uso real pedir
 
 ### Plano formalizado para o proximo ciclo
 
-- `docs/next-cycle-plan-web-app-match-player.md`
+- a definir depois de aumentar a densidade real do banco
 
 ## Contexto do ciclo concluido
 
-### Tournament e season
+### Match para player
 
 O ciclo entregue fez:
 
-- abrir suporte minimo na `data-api` para `tournament` e `season`
-- criar as telas `/tournaments/[slug]` e `/seasons/[id]`
-- conectar a tela de partida a esses dois contextos
-- validar o fluxo com dado real local
+- completar `lineups.playerSlug` na `data-api`
+- aproveitar o join simples para expor `playerSlug` e `relatedPlayerSlug` em `events`
+- ligar a tela de partida ao perfil do jogador em lineup e evento
+- validar o fluxo com testes e build no backend e no app
 
 ## Proximo ciclo formalizado
 
-### Match para player
+### Proximo recorte a definir
 
-O proximo recorte formalizado prioriza:
+O proximo recorte deve ser escolhido com mais densidade de dados no banco.
 
-- `lineups.playerSlug`
-- navegacao de `match -> player`
-- `events` com slug apenas se o custo continuar baixo
+As duas direcoes mais naturais agora sao:
 
-O objetivo e fechar a lacuna funcional mais visivel da tela de partida antes de
-abrir novos contextos ou refinamentos maiores.
+- ampliar a cobertura do ambiente com mais eventos reais
+- decidir se `tournament` e `season` entram na busca a partir do que essa carga revelar
