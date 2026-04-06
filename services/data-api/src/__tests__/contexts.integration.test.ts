@@ -95,6 +95,7 @@ runIntegrationTest("GET /matches/:id retorna contexto completo de partida", asyn
   assert.equal(payload.match.id, fixtureIds.match);
   assert.ok(payload.lineups.length > 0);
   assert.ok(payload.events.length > 0);
+  assert.ok(payload.lineups.every((lineup) => typeof lineup.playerSlug === "string"));
 });
 
 runIntegrationTest("GET /teams/:id retorna contexto focal de equipe", async (t) => {
