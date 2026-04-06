@@ -36,6 +36,36 @@
       "type": "shell",
       "command": "pnpm db:dry-run:phase2",
       "problemMatcher": []
+    },
+    {
+      "label": "Web: Scrape Reference Match",
+      "type": "shell",
+      "command": "pnpm --filter @services/sofascore scrape 15237889",
+      "problemMatcher": []
+    },
+    {
+      "label": "Web: Start Data API",
+      "type": "shell",
+      "command": "pnpm --filter @services/data-api start",
+      "problemMatcher": []
+    },
+    {
+      "label": "Web: Start Web App",
+      "type": "shell",
+      "command": "pnpm --filter @apps/web dev",
+      "problemMatcher": []
+    },
+    {
+      "label": "Web: Start Full Local Stack",
+      "type": "shell",
+      "command": "pnpm web:up",
+      "problemMatcher": []
+    },
+    {
+      "label": "Web: Stop Full Local Stack",
+      "type": "shell",
+      "command": "pnpm web:down",
+      "problemMatcher": []
     }
   ]
 }
