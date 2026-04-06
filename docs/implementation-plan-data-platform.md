@@ -36,6 +36,7 @@ Veja tambem: `docs/next-cycle-plan-web-app-contexts.md`
 Veja tambem: `docs/next-cycle-web-app-contexts-closeout.md`
 Veja tambem: `docs/next-cycle-plan-web-app-slugs-and-tests.md`
 Veja tambem: `docs/next-cycle-web-app-slugs-and-tests-closeout.md`
+Veja tambem: `docs/next-cycle-plan-web-app-search-and-cache.md`
 Veja tambem: `docs/next-cycle-plan-resident-scheduler.md`
 
 ## Objetivo
@@ -531,3 +532,23 @@ Concluido.
 - a consistencia de URL do app ja foi fechada
 - a proxima melhoria mais direta agora e na experiencia de uso e leitura
 - o scheduler residente continua fazendo mais sentido quando houver necessidade operacional continua
+
+## Proximo ciclo recomendado
+
+### Busca e cache do web app
+
+O proximo ciclo mais natural agora e:
+
+- melhorar a busca para uma experiencia interativa com debounce
+- introduzir uma estrategia inicial de cache por rota
+- ampliar os testes do BFF/cliente para acompanhar esse comportamento
+
+### Observacao importante
+
+Busca interativa e cache devem ser planejados juntos, mas executados em frentes
+independentes.
+
+Isso evita que:
+
+- a migracao da busca para componente cliente bloqueie a entrega de cache
+- a estrategia de cache fique acoplada a uma unica implementacao de UX
