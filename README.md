@@ -70,6 +70,16 @@ pnpm db:run-scheduler:phase5 -- --drain
 pnpm docker:down
 ```
 
+Para o ciclo incremental do scheduler residente:
+
+```bash
+pnpm docker:up
+pnpm db:migrate
+node scripts/db/automation/plan-match.mjs --event-id=15237889 --scheduled-at=2026-04-05T12:00:00-03:00
+pnpm scheduler:resident
+pnpm docker:down
+```
+
 3. Scripts utilitarios equivalentes:
 
 ```bash

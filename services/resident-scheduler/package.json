@@ -1,0 +1,15 @@
+{
+  "name": "@services/resident-scheduler",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.mjs",
+  "scripts": {
+    "build": "node --check src/index.mjs && node --check src/config.mjs",
+    "dev": "node --watch src/index.mjs",
+    "start": "node src/index.mjs",
+    "lint": "eslint src --ext .mjs",
+    "test": "node --test 'src/**/*.test.mjs'",
+    "typecheck": "node --check src/index.mjs && node --check src/config.mjs"
+  }
+}

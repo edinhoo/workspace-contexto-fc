@@ -39,6 +39,7 @@ Veja tambem: `docs/next-cycle-web-app-slugs-and-tests-closeout.md`
 Veja tambem: `docs/next-cycle-plan-web-app-search-and-cache.md`
 Veja tambem: `docs/next-cycle-web-app-search-and-cache-closeout.md`
 Veja tambem: `docs/next-cycle-plan-resident-scheduler.md`
+Veja tambem: `docs/next-cycle-resident-scheduler-closeout.md`
 
 ## Objetivo
 
@@ -525,39 +526,46 @@ Concluido.
 
 ## Ciclo incremental mais recente
 
-### Busca e cache do web app
+### Scheduler residente
 
 Concluido.
 
 #### Resultado consolidado
 
-- a busca passou a ter resultados em tempo real com debounce
-- a URL continua representando apenas a busca confirmada
-- o cliente HTTP ganhou uma estrategia inicial de cache por contexto
-- a cobertura de testes do BFF/cliente foi ampliada
+- o scheduler passou a ter um servico Node residente proprio
+- o loop continuo reaproveita o claim seguro ja validado
+- backlog vencido no boot e tratado no mesmo comportamento steady-state
+- a operacao de start, stop e restart ficou documentada
 
 #### Limitacoes conhecidas
 
-- a busca cliente ainda nao possui testes especificos de componente
-- a estrategia de cache ainda e inicial e deliberadamente simples
+- a iteracao continua com concorrencia efetiva `1`
+- o polling ainda e propositalmente simples
+- a validacao permaneceu no ambiente local
 
 ## Ordem sugerida agora
 
-1. scheduler residente
-2. refinamentos incrementais do web app
+1. refinamentos incrementais do web app
+2. observabilidade operacional adicional do scheduler, se houver necessidade real
 
 ### Motivo
 
-- o web app ja tem base, contexto, slugs, testes e busca mais fluida
-- o scheduler residente volta a ser o proximo ganho mais evidente fora da camada de produto
-- os refinamentos restantes do app agora sao incrementais, nao travas estruturais
+- o scheduler residente ja cobre o ganho operacional mais estrutural deste momento
+- o web app continua sendo o trilho mais natural para descobrir novas necessidades de produto
+- qualquer endurecimento adicional do scheduler agora pode ser puxado por uso real
+
+### Recorte sugerido
+
+- testes de componente da busca e UX incremental do web app
+- refinamentos adicionais de cache por rota
+- endurecimento de observabilidade do scheduler apenas se o uso real pedir
 
 ## Contexto do ciclo concluido
 
-### Busca e cache do web app
+### Scheduler residente
 
 O ciclo entregue fez:
 
-- melhorar a busca para uma experiencia interativa com debounce
-- introduzir uma estrategia inicial de cache por rota
-- ampliar os testes do BFF/cliente para acompanhar esse comportamento
+- criar um servico Node proprio para manter o scheduler em execucao continua
+- reaproveitar o mesmo runtime de processamento do modo CLI
+- validar backlog, idle e restart sem reabrir o pipeline de ingestao
