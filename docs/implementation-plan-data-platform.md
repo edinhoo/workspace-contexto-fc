@@ -42,6 +42,7 @@ Veja tambem: `docs/next-cycle-plan-web-app-search-tests.md`
 Veja tambem: `docs/next-cycle-web-app-search-tests-closeout.md`
 Veja tambem: `docs/next-cycle-plan-web-app-cross-navigation.md`
 Veja tambem: `docs/next-cycle-web-app-cross-navigation-closeout.md`
+Veja tambem: `docs/next-cycle-plan-web-app-tournament-season.md`
 Veja tambem: `docs/next-cycle-plan-resident-scheduler.md`
 Veja tambem: `docs/next-cycle-resident-scheduler-closeout.md`
 
@@ -569,7 +570,7 @@ Concluido.
 
 ### Plano formalizado para o proximo ciclo
 
-- a definir a partir do recorte de `tournament` e `season`
+- `docs/next-cycle-plan-web-app-tournament-season.md`
 
 ## Contexto do ciclo concluido
 
@@ -592,6 +593,8 @@ O proximo ciclo formalizado prioriza:
 - `season`
 - endpoints minimos na `data-api`
 - navegacao funcional a partir dos contextos ja existentes
+- `tournament` por `slug`
+- `season` por `id`
 
 Este recorte deve entrar como continuacao natural do aprendizado do Ciclo A:
 
