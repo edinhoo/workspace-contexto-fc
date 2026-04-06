@@ -215,8 +215,7 @@ export default async function MatchPage({ params }: MatchPageProps) {
             <CardHeader>
               <CardTitle>Eventos da partida</CardTitle>
               <CardDescription>
-                Incidentes em ordem cronológica observada. Time já é contexto da
-                partida; jogador ainda aparece só como dado exibido.
+                Incidentes em ordem cronológica observada.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
