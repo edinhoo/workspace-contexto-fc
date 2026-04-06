@@ -1,8 +1,9 @@
 import { HttpError } from "../http/error.js";
+import { buildMatchSlug } from "./shared/match-slug.js";
 import type { DbClient } from "../types.js";
 
-export const getMatchContext = async (db: DbClient, matchId: string) => {
-  const match = await db
+const getMatchBase = async (db: DbClient, matchId: string) =>
+  db
     .selectFrom("core.matches as m")
     .innerJoin("core.tournaments as t", "t.id", "m.tournament")
     .innerJoin("core.seasons as s", "s.id", "m.season")
@@ -40,6 +41,9 @@ export const getMatchContext = async (db: DbClient, matchId: string) => {
     ])
     .where("m.id", "=", matchId)
     .executeTakeFirst();
+
+export const getMatchContext = async (db: DbClient, matchId: string) => {
+  const match = await getMatchBase(db, matchId);
 
   if (!match) {
     throw new HttpError(404, "match_not_found", "Match not found", {
@@ -108,6 +112,11 @@ export const getMatchContext = async (db: DbClient, matchId: string) => {
   return {
     match: {
       id: match.match_id,
+      slug: buildMatchSlug({
+        homeTeamSlug: match.home_team_slug,
+        awayTeamSlug: match.away_team_slug,
+        startTime: match.match_start_time,
+      }),
       sourceRef: match.match_source_ref,
       startTime: match.match_start_time.toISOString(),
       round: match.match_round,
@@ -153,4 +162,34 @@ export const getMatchContext = async (db: DbClient, matchId: string) => {
     events,
     teamStats,
   };
+};
+
+export const getMatchContextBySlug = async (db: DbClient, slug: string) => {
+  const matches = await db
+    .selectFrom("core.matches as m")
+    .innerJoin("core.teams as ht", "ht.id", "m.home_team")
+    .innerJoin("core.teams as at", "at.id", "m.away_team")
+    .select([
+      "m.id as match_id",
+      "m.start_time as match_start_time",
+      "ht.slug as home_team_slug",
+      "at.slug as away_team_slug",
+    ])
+    .execute();
+
+  const match = matches.find((item) =>
+    buildMatchSlug({
+      homeTeamSlug: item.home_team_slug,
+      awayTeamSlug: item.away_team_slug,
+      startTime: item.match_start_time,
+    }) === slug,
+  );
+
+  if (!match) {
+    throw new HttpError(404, "match_not_found", "Match not found", {
+      slug,
+    });
+  }
+
+  return getMatchContext(db, match.match_id);
 };

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const entityIdSchema = z.string().min(1);
+export const entitySlugSchema = z.string().trim().min(1);
 
 const numberLikeSchema = z.union([z.number(), z.string().min(1)]);
 

@@ -1,4 +1,5 @@
 import { HttpError } from "../http/error.js";
+import { buildMatchSlug } from "./shared/match-slug.js";
 import { buildTeamPerspectiveMatch } from "./shared/team-perspective.js";
 import type { DbClient } from "../types.js";
 
@@ -42,6 +43,8 @@ export const getTeamContext = async (
     .select([
       "m.id as id",
       "m.start_time as startTime",
+      "ht.slug as homeTeamSlug",
+      "at.slug as awayTeamSlug",
       "tr.name as tournamentName",
       "s.name as seasonName",
       "m.home_team as homeTeamId",
@@ -111,6 +114,11 @@ export const getTeamContext = async (
 
       return {
         id: match.id,
+        slug: buildMatchSlug({
+          homeTeamSlug: match.homeTeamSlug,
+          awayTeamSlug: match.awayTeamSlug,
+          startTime: match.startTime,
+        }),
         startTime: match.startTime.toISOString(),
         tournamentName: match.tournamentName,
         seasonName: match.seasonName,
@@ -123,4 +131,24 @@ export const getTeamContext = async (
     }),
     relatedPlayers,
   };
+};
+
+export const getTeamContextBySlug = async (
+  db: DbClient,
+  slug: string,
+  filters: TeamFilters,
+) => {
+  const team = await db
+    .selectFrom("core.teams as t")
+    .select(["t.id as id"])
+    .where("t.slug", "=", slug)
+    .executeTakeFirst();
+
+  if (!team) {
+    throw new HttpError(404, "team_not_found", "Team not found", {
+      slug,
+    });
+  }
+
+  return getTeamContext(db, team.id, filters);
 };

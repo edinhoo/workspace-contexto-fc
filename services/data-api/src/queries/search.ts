@@ -1,5 +1,6 @@
 import { sql } from "kysely";
 
+import { buildMatchSlug } from "./shared/match-slug.js";
 import type { SearchItem, SearchQuery } from "../contracts/search.js";
 import type { DbClient } from "../types.js";
 
@@ -64,7 +65,9 @@ export const searchEntities = async (
         sql<string | null>`to_char(${sql.ref("m.start_time")}, 'YYYY-MM-DD HH24:MI')`.as(
           "subtitle",
         ),
-        sql<string | null>`null`.as("slug"),
+        "ht.slug as homeTeamSlug",
+        "at.slug as awayTeamSlug",
+        "m.start_time as startTime",
       ])
       .where((eb) =>
         eb.or([
@@ -77,5 +80,19 @@ export const searchEntities = async (
       .execute(),
   ]);
 
-  return [...teams, ...players, ...matches].slice(0, query.limit);
+  return [
+    ...teams,
+    ...players,
+    ...matches.map((match) => ({
+      id: match.id,
+      type: match.type,
+      label: match.label,
+      subtitle: match.subtitle,
+      slug: buildMatchSlug({
+        homeTeamSlug: match.homeTeamSlug,
+        awayTeamSlug: match.awayTeamSlug,
+        startTime: match.startTime,
+      }),
+    })),
+  ].slice(0, query.limit);
 };

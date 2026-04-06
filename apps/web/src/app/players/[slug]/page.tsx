@@ -3,15 +3,12 @@ import { notFound } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DataApiError, getPlayer } from "@/lib/api/data-api";
+import { DataApiError, getPlayerBySlug } from "@/lib/api/data-api";
 import { getMatchHref, getTeamHref } from "@/lib/routes";
 
 type PlayerPageProps = {
   params: Promise<{
     slug: string;
-  }>;
-  searchParams?: Promise<{
-    id?: string;
   }>;
 };
 
@@ -28,20 +25,11 @@ const formatAppearanceDate = (value: string): string =>
 
 export default async function PlayerPage({
   params,
-  searchParams,
 }: PlayerPageProps) {
-  const [{ slug }, resolvedSearchParams] = await Promise.all([
-    params,
-    searchParams,
-  ]);
-  const id = resolvedSearchParams?.id?.trim();
-
-  if (!id) {
-    notFound();
-  }
+  const { slug } = await params;
 
   try {
-    const response = await getPlayer(id);
+    const response = await getPlayerBySlug(slug);
 
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-6 py-10 md:px-10">
@@ -99,7 +87,7 @@ export default async function PlayerPage({
               <CardContent className="space-y-3">
                 {response.currentTeams.length ? (
                   response.currentTeams.map((team) => (
-                    <Link key={team.id} href={getTeamHref(team.slug, team.id)}>
+                    <Link key={team.id} href={getTeamHref(team.slug)}>
                       <div className="rounded-2xl border border-[color:var(--border)] p-4 transition hover:border-black/20">
                         <div className="flex items-start justify-between gap-3">
                           <div>
@@ -132,7 +120,7 @@ export default async function PlayerPage({
               </CardHeader>
               <CardContent className="space-y-3">
                 {response.statEntries.map((entry) => (
-                  <Link key={`${entry.matchId}-${entry.teamId}`} href={getMatchHref(entry.matchId)}>
+                  <Link key={`${entry.matchId}-${entry.teamId}`} href={getMatchHref(entry.matchSlug)}>
                     <div className="rounded-2xl border border-[color:var(--border)] p-4 transition hover:border-black/20">
                       <p className="font-medium text-[color:var(--foreground)]">
                         {entry.teamName}
@@ -157,7 +145,7 @@ export default async function PlayerPage({
             <CardContent className="space-y-4">
               {response.recentAppearances.length ? (
                 response.recentAppearances.map((appearance) => (
-                  <Link key={appearance.matchId} href={getMatchHref(appearance.matchId)}>
+                  <Link key={appearance.matchId} href={getMatchHref(appearance.matchSlug)}>
                     <div className="rounded-2xl border border-[color:var(--border)] p-4 transition hover:border-black/20">
                       <div className="flex flex-wrap items-center gap-3">
                         <Badge variant="secondary">{appearance.teamName}</Badge>

@@ -1,4 +1,5 @@
 import { HttpError } from "../http/error.js";
+import { buildMatchSlug } from "./shared/match-slug.js";
 import { buildTeamPerspectiveMatch } from "./shared/team-perspective.js";
 import type { DbClient } from "../types.js";
 
@@ -42,6 +43,8 @@ export const getPlayerContext = async (db: DbClient, playerId: string) => {
       .select([
         "l.match as matchId",
         "m.start_time as startTime",
+        "ht.slug as homeTeamSlug",
+        "at.slug as awayTeamSlug",
         "l.team as teamId",
         "t.name as teamName",
         "m.home_team as homeTeamId",
@@ -57,9 +60,15 @@ export const getPlayerContext = async (db: DbClient, playerId: string) => {
       .execute(),
     db
       .selectFrom("core.player_match_stats as pms")
+      .innerJoin("core.matches as m", "m.id", "pms.match")
       .innerJoin("core.teams as t", "t.id", "pms.team")
+      .innerJoin("core.teams as ht", "ht.id", "m.home_team")
+      .innerJoin("core.teams as at", "at.id", "m.away_team")
       .select([
         "pms.match as matchId",
+        "m.start_time as startTime",
+        "ht.slug as homeTeamSlug",
+        "at.slug as awayTeamSlug",
         "pms.team as teamId",
         "t.name as teamName",
         "pms.stat_payload as statPayload",
@@ -85,6 +94,11 @@ export const getPlayerContext = async (db: DbClient, playerId: string) => {
 
       return {
         matchId: appearance.matchId,
+        matchSlug: buildMatchSlug({
+          homeTeamSlug: appearance.homeTeamSlug,
+          awayTeamSlug: appearance.awayTeamSlug,
+          startTime: appearance.startTime,
+        }),
         startTime: appearance.startTime.toISOString(),
         teamId: appearance.teamId,
         teamName: appearance.teamName,
@@ -94,6 +108,32 @@ export const getPlayerContext = async (db: DbClient, playerId: string) => {
         rating: appearance.rating,
       };
     }),
-    statEntries,
+    statEntries: statEntries.map((entry) => ({
+      matchId: entry.matchId,
+      matchSlug: buildMatchSlug({
+        homeTeamSlug: entry.homeTeamSlug,
+        awayTeamSlug: entry.awayTeamSlug,
+        startTime: entry.startTime,
+      }),
+      teamId: entry.teamId,
+      teamName: entry.teamName,
+      statPayload: entry.statPayload,
+    })),
   };
+};
+
+export const getPlayerContextBySlug = async (db: DbClient, slug: string) => {
+  const player = await db
+    .selectFrom("core.players as p")
+    .select(["p.id as id"])
+    .where("p.slug", "=", slug)
+    .executeTakeFirst();
+
+  if (!player) {
+    throw new HttpError(404, "player_not_found", "Player not found", {
+      slug,
+    });
+  }
+
+  return getPlayerContext(db, player.id);
 };
