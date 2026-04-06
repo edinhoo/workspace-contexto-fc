@@ -104,6 +104,7 @@ export default async function TeamPage({
                             {formatMatchDate(match.startTime)} · {match.side === "home" ? "mandante" : "visitante"}
                           </p>
                         </div>
+                        <Badge variant="secondary">Abrir partida</Badge>
                         <div className="text-lg font-semibold text-[color:var(--foreground)]">
                           {formatScore(match.teamScore)} x {formatScore(match.opponentScore)}
                         </div>
@@ -142,7 +143,7 @@ export default async function TeamPage({
                           {player.position ?? "posição não informada"}
                         </p>
                       </div>
-                      <Badge variant="secondary">Perfil</Badge>
+                      <Badge variant="secondary">Abrir jogador</Badge>
                     </div>
                   </div>
                 </Link>

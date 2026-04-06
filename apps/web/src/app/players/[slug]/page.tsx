@@ -98,7 +98,7 @@ export default async function PlayerPage({
                               {team.slug}
                             </p>
                           </div>
-                          <Badge variant="secondary">Time</Badge>
+                          <Badge variant="secondary">Abrir time</Badge>
                         </div>
                       </div>
                     </Link>
@@ -122,12 +122,17 @@ export default async function PlayerPage({
                 {response.statEntries.map((entry) => (
                   <Link key={`${entry.matchId}-${entry.teamId}`} href={getMatchHref(entry.matchSlug)}>
                     <div className="rounded-2xl border border-[color:var(--border)] p-4 transition hover:border-black/20">
-                      <p className="font-medium text-[color:var(--foreground)]">
-                        {entry.teamName}
-                      </p>
-                      <p className="mt-1 text-sm text-[color:var(--muted-foreground)]">
-                        {Object.keys(entry.statPayload).length} chaves em `statPayload`
-                      </p>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-medium text-[color:var(--foreground)]">
+                            {entry.teamName}
+                          </p>
+                          <p className="mt-1 text-sm text-[color:var(--muted-foreground)]">
+                            {Object.keys(entry.statPayload).length} chaves em `statPayload`
+                          </p>
+                        </div>
+                        <Badge variant="secondary">Abrir partida</Badge>
+                      </div>
                     </div>
                   </Link>
                 ))}
@@ -161,6 +166,9 @@ export default async function PlayerPage({
                           Minutos: {appearance.minutesPlayed ?? "-"} · Nota:{" "}
                           {appearance.rating ?? "-"}
                         </p>
+                      </div>
+                      <div className="mt-3 flex justify-end">
+                        <Badge variant="secondary">Abrir partida</Badge>
                       </div>
                     </div>
                   </Link>
