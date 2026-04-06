@@ -1,14 +1,23 @@
 import { z } from "zod";
 
-import { entityIdSchema, nullableNumberFieldSchema } from "./common.js";
+import {
+  entityIdSchema,
+  entitySlugSchema,
+  nullableNumberFieldSchema,
+} from "./common.js";
 
 export const matchParamsSchema = z.object({
   id: entityIdSchema,
 });
 
+export const matchSlugParamsSchema = z.object({
+  slug: entitySlugSchema,
+});
+
 export const matchResponseSchema = z.object({
   match: z.object({
     id: z.string(),
+    slug: z.string(),
     sourceRef: z.string(),
     startTime: z.string(),
     round: z.string().nullable(),
@@ -92,4 +101,5 @@ export const matchResponseSchema = z.object({
 });
 
 export type MatchParams = z.infer<typeof matchParamsSchema>;
+export type MatchSlugParams = z.infer<typeof matchSlugParamsSchema>;
 export type MatchResponse = z.infer<typeof matchResponseSchema>;

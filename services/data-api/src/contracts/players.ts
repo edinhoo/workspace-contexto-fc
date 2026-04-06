@@ -1,9 +1,17 @@
 import { z } from "zod";
 
-import { entityIdSchema, nullableNumberFieldSchema } from "./common.js";
+import {
+  entityIdSchema,
+  entitySlugSchema,
+  nullableNumberFieldSchema,
+} from "./common.js";
 
 export const playerParamsSchema = z.object({
   id: entityIdSchema,
+});
+
+export const playerSlugParamsSchema = z.object({
+  slug: entitySlugSchema,
 });
 
 export const playerResponseSchema = z.object({
@@ -26,6 +34,7 @@ export const playerResponseSchema = z.object({
   recentAppearances: z.array(
     z.object({
       matchId: z.string(),
+      matchSlug: z.string(),
       startTime: z.string(),
       teamId: z.string(),
       teamName: z.string(),
@@ -38,6 +47,7 @@ export const playerResponseSchema = z.object({
   statEntries: z.array(
     z.object({
       matchId: z.string(),
+      matchSlug: z.string(),
       teamId: z.string(),
       teamName: z.string(),
       statPayload: z.record(z.string(), z.unknown()),
@@ -46,4 +56,5 @@ export const playerResponseSchema = z.object({
 });
 
 export type PlayerParams = z.infer<typeof playerParamsSchema>;
+export type PlayerSlugParams = z.infer<typeof playerSlugParamsSchema>;
 export type PlayerResponse = z.infer<typeof playerResponseSchema>;
