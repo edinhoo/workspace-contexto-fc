@@ -40,6 +40,8 @@ Veja tambem: `docs/next-cycle-plan-web-app-search-and-cache.md`
 Veja tambem: `docs/next-cycle-web-app-search-and-cache-closeout.md`
 Veja tambem: `docs/next-cycle-plan-web-app-search-tests.md`
 Veja tambem: `docs/next-cycle-web-app-search-tests-closeout.md`
+Veja tambem: `docs/next-cycle-plan-web-app-cross-navigation.md`
+Veja tambem: `docs/next-cycle-web-app-cross-navigation-closeout.md`
 Veja tambem: `docs/next-cycle-plan-resident-scheduler.md`
 Veja tambem: `docs/next-cycle-resident-scheduler-closeout.md`
 
@@ -528,50 +530,70 @@ Concluido.
 
 ## Ciclo incremental mais recente
 
-### Testes de busca e UX do web app
+### Navegacao cruzada entre contextos existentes
 
 Concluido.
 
 #### Resultado consolidado
 
-- `SearchExperience` passou a ter testes de componente
-- a UX dos estados da busca ficou mais clara
-- a politica inicial de cache do cliente HTTP foi consolidada
-- a busca continua respondendo em tempo real sem reescrever a URL a cada tecla
+- `match`, `team` e `player` passaram a formar uma navegacao cruzada mais clara
+- a tela de partida passou a destacar melhor os contextos relacionados
+- o app tornou mais explicita a diferenca entre dado navegavel e dado apenas exibido
+- o ciclo continuou so frontend, sem reabrir contratos da `data-api`
 
 #### Limitacoes conhecidas
 
-- a cobertura continua focada no componente cliente da busca, nao na pagina inteira
-- a estrategia de cache ainda e inicial e deliberadamente simples
+- o contexto de partida ainda nao navega diretamente para jogador
+- `tournament` e `season` ainda nao existem como contextos proprios
 
 ## Ordem sugerida agora
 
-1. refinamentos incrementais do web app
-2. observabilidade operacional adicional do scheduler, se houver necessidade real
+1. novos contextos minimos de `tournament` e `season`
+2. refinamentos incrementais do web app a partir das lacunas descobertas
+3. observabilidade operacional adicional do scheduler, se houver necessidade real
 
 ### Motivo
 
 - o web app continua sendo o trilho mais natural para descobrir novas necessidades de produto
-- o ciclo atual fechou a lacuna mais clara de teste/UX da busca
-- o scheduler residente ja cobre o ganho operacional mais estrutural deste momento
-- qualquer endurecimento adicional do scheduler agora pode ser puxado por uso real
+- o Ciclo A validou melhor a navegacao entre os contextos atuais
+- o proximo ganho estrutural de informacao agora passa por abrir `tournament` e `season`
+- a separacao entre contextos existentes e contextos novos manteve os PRs menores e mais faceis de revisar
 
 ### Recorte sugerido
 
-- testes de componente da busca e UX incremental do web app
-- refinamentos adicionais de cache por rota
+- Ciclo B:
+  - contextos minimos de `tournament` e `season`
+  - com endpoints minimos na `data-api`
+- refinamentos incrementais do web app puxados pelas lacunas descobertas no Ciclo A
 - endurecimento de observabilidade do scheduler apenas se o uso real pedir
 
 ### Plano formalizado para o proximo ciclo
 
-- `docs/next-cycle-plan-web-app-search-tests.md`
+- a definir a partir do recorte de `tournament` e `season`
 
 ## Contexto do ciclo concluido
 
-### Testes de busca e UX do web app
+### Navegacao cruzada entre contextos existentes
 
 O ciclo entregue fez:
 
-- adicionar testes de componente para `SearchExperience`
-- refinar a UX leve da busca cliente
-- consolidar a politica inicial de cache do cliente HTTP
+- reforcar a navegacao de `match` para `team`
+- consolidar a navegacao de `team` para `match` e `player`
+- consolidar a navegacao de `player` para `team` e `match`
+- deixar mais claro onde a tela de partida ainda exibe jogador sem link navegavel
+
+## Proximo ciclo formalizado
+
+### Ciclo B - Novos contextos minimos
+
+O proximo ciclo formalizado prioriza:
+
+- `tournament`
+- `season`
+- endpoints minimos na `data-api`
+- navegacao funcional a partir dos contextos ja existentes
+
+Este recorte deve entrar como continuacao natural do aprendizado do Ciclo A:
+
+- depois da navegacao cruzada ja validada entre `match`, `team` e `player`
+- sem misturar novos contextos com o endurecimento basico das telas atuais

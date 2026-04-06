@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataApiError, getMatchBySlug } from "@/lib/api/data-api";
+import { getTeamHref } from "@/lib/routes";
 
 type MatchPageProps = {
   params: Promise<{
@@ -60,9 +61,19 @@ export default async function MatchPage({ params }: MatchPageProps) {
                   <p className="text-sm uppercase tracking-[0.2em] text-[color:var(--muted-foreground)]">
                     Mandante
                   </p>
-                  <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
-                    {response.homeTeam.name}
-                  </h1>
+                  <div className="space-y-2">
+                    <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
+                      <Link
+                        href={getTeamHref(response.homeTeam.slug)}
+                        className="underline-offset-4 hover:underline"
+                      >
+                        {response.homeTeam.name}
+                      </Link>
+                    </h1>
+                    <p className="text-sm text-[color:var(--muted-foreground)]">
+                      Abrir contexto do time mandante
+                    </p>
+                  </div>
                 </div>
                 <div className="rounded-3xl bg-[color:var(--secondary)] px-6 py-4 text-center">
                   <div className="text-4xl font-semibold tracking-tight md:text-5xl">
@@ -78,9 +89,19 @@ export default async function MatchPage({ params }: MatchPageProps) {
                   <p className="text-sm uppercase tracking-[0.2em] text-[color:var(--muted-foreground)]">
                     Visitante
                   </p>
-                  <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
-                    {response.awayTeam.name}
-                  </h2>
+                  <div className="space-y-2">
+                    <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
+                      <Link
+                        href={getTeamHref(response.awayTeam.slug)}
+                        className="underline-offset-4 hover:underline"
+                      >
+                        {response.awayTeam.name}
+                      </Link>
+                    </h2>
+                    <p className="text-sm text-[color:var(--muted-foreground)]">
+                      Abrir contexto do time visitante
+                    </p>
+                  </div>
                 </div>
               </div>
             </CardHeader>
@@ -100,35 +121,83 @@ export default async function MatchPage({ params }: MatchPageProps) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Stats do time</CardTitle>
-              <CardDescription>
-                O `statPayload` permanece livre nesta etapa.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {response.teamStats.map((stats) => (
-                <div
-                  key={stats.id}
-                  className="rounded-2xl border border-[color:var(--border)] p-4"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-medium text-[color:var(--foreground)]">
-                      {stats.teamName}
-                    </p>
-                    <Badge variant="secondary">
-                      {Object.keys(stats.statPayload).length} chaves
-                    </Badge>
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Stats do time</CardTitle>
+                <CardDescription>
+                  O `statPayload` permanece livre nesta etapa.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {response.teamStats.map((stats) => (
+                  <div
+                    key={stats.id}
+                    className="rounded-2xl border border-[color:var(--border)] p-4"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-medium text-[color:var(--foreground)]">
+                        {stats.teamName}
+                      </p>
+                      <Badge variant="secondary">
+                        {Object.keys(stats.statPayload).length} chaves
+                      </Badge>
+                    </div>
                   </div>
+                ))}
+                <div className="rounded-2xl border border-dashed border-[color:var(--border)] p-4 text-sm text-[color:var(--muted-foreground)]">
+                  O próximo ciclo pode transformar `teamStats.statPayload` em blocos mais
+                  legíveis se essa leitura se mostrar recorrente.
                 </div>
-              ))}
-              <div className="rounded-2xl border border-dashed border-[color:var(--border)] p-4 text-sm text-[color:var(--muted-foreground)]">
-                O próximo ciclo pode transformar `teamStats.statPayload` em blocos mais
-                legíveis se essa leitura se mostrar recorrente.
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Contextos relacionados</CardTitle>
+                <CardDescription>
+                  Esta partida já conecta diretamente aos dois times envolvidos.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Link href={getTeamHref(response.homeTeam.slug)}>
+                  <div className="rounded-2xl border border-[color:var(--border)] p-4 transition hover:border-black/20">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-[color:var(--foreground)]">
+                          {response.homeTeam.name}
+                        </p>
+                        <p className="text-sm text-[color:var(--muted-foreground)]">
+                          Time mandante
+                        </p>
+                      </div>
+                      <Badge variant="secondary">Abrir time</Badge>
+                    </div>
+                  </div>
+                </Link>
+                <Link href={getTeamHref(response.awayTeam.slug)}>
+                  <div className="rounded-2xl border border-[color:var(--border)] p-4 transition hover:border-black/20">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-[color:var(--foreground)]">
+                          {response.awayTeam.name}
+                        </p>
+                        <p className="text-sm text-[color:var(--muted-foreground)]">
+                          Time visitante
+                        </p>
+                      </div>
+                      <Badge variant="secondary">Abrir time</Badge>
+                    </div>
+                  </div>
+                </Link>
+                <div className="rounded-2xl border border-dashed border-[color:var(--border)] p-4 text-sm text-[color:var(--muted-foreground)]">
+                  Os jogadores ainda aparecem aqui apenas como dado exibido. Este
+                  contexto da partida ainda não expõe `slug` suficiente para navegação
+                  direta de lineup ou evento para perfil de jogador.
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
@@ -136,7 +205,8 @@ export default async function MatchPage({ params }: MatchPageProps) {
             <CardHeader>
               <CardTitle>Eventos da partida</CardTitle>
               <CardDescription>
-                Incidentes em ordem cronológica observada.
+                Incidentes em ordem cronológica observada. Time já é contexto da
+                partida; jogador ainda aparece só como dado exibido.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -184,7 +254,10 @@ export default async function MatchPage({ params }: MatchPageProps) {
             <Card>
               <CardHeader>
                 <CardTitle>{response.homeTeam.name}</CardTitle>
-                <CardDescription>Lineup observada do mandante.</CardDescription>
+                <CardDescription>
+                  Lineup observada do mandante. Use o nome do time para abrir o contexto
+                  completo.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {homeLineup.map((player) => (
@@ -217,7 +290,10 @@ export default async function MatchPage({ params }: MatchPageProps) {
             <Card>
               <CardHeader>
                 <CardTitle>{response.awayTeam.name}</CardTitle>
-                <CardDescription>Lineup observada do visitante.</CardDescription>
+                <CardDescription>
+                  Lineup observada do visitante. Use o nome do time para abrir o contexto
+                  completo.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {awayLineup.map((player) => (
