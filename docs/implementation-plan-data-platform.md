@@ -552,6 +552,13 @@ Concluido.
 - o scheduler residente volta a ser o proximo ganho mais evidente fora da camada de produto
 - os refinamentos restantes do app agora sao incrementais, nao travas estruturais
 
+### Recorte sugerido
+
+- servico Node proprio no monorepo
+- concorrencia efetiva `1`
+- polling fixo e previsivel
+- mesmo scraper e mesmo claim seguro ja validados
+
 ## Contexto do ciclo concluido
 
 ### Busca e cache do web app
